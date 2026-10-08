@@ -66,6 +66,7 @@ export function RollCallPage() {
           marks,
           recordedBy: access.email,
           recordedByName: access.name,
+          previous: Object.fromEntries(existing.data.map((a) => [a.studentId, a.status])),
         }),
       `Appel enregistré : ${presents} présents, ${absents} absent${absents > 1 ? 's' : ''}, ${lates} retard${lates > 1 ? 's' : ''}.`,
     );

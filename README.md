@@ -23,7 +23,8 @@ Suivi scolaire entre l'école et les parents.
 packages/shared/   Types, logique des frais et des présences, accès Firestore, composants d'interface
 apps/parent/       App des parents (React + Capacitor) ; android/ = projet Android
 apps/ecole/        Site de l'école (React)
-functions/         Notifications push (facultatif, plan Blaze)
+push/              Envoi des notifications push (Cloudflare Worker, offre gratuite)
+functions/         Variante de l'envoi en Cloud Functions (plan Blaze, non utilisée)
 firestore.rules    Règles de sécurité (qui peut lire et écrire quoi)
 tests/             Tests des règles contre l'émulateur Firestore
 ```
@@ -94,15 +95,24 @@ Le domaine de chaque site doit figurer dans Authentication › Paramètres › D
 - **Parents.** Pour lier un enfant, il faut son code élève **et** un numéro de téléphone enregistré par l'école pour cet élève. Les matricules ne peuvent pas être listés.
 - **Contrôle.** `npm run test:rules` vérifie ces règles contre l'émulateur (Java requis). La CI le fait à chaque push.
 
-## Notifications push (facultatif)
+## Notifications push
 
-Elles exigent le **plan Blaze** de Firebase (paiement à l'usage, gratuit dans les limites habituelles d'une école).
+Elles passent par un **Cloudflare Worker gratuit** (dossier `push/`), sans le plan Blaze de Firebase :
 
-1. Dans la console Firebase, ajoutez une application **Android** avec l'identifiant `cd.parentecole.app`, puis téléchargez `google-services.json`.
-2. Ajoutez-le en secret GitHub `GOOGLE_SERVICES_JSON`, encodé en base64 (`base64 -w0 google-services.json`). L'APK active alors les notifications.
-3. Déployez les fonctions : `npm --prefix functions install && npx firebase-tools deploy --only functions`.
+1. Quand l'école enregistre une absence ou un retard, un paiement, une note de conduite, un devoir ou un communiqué, le site dépose une demande dans `notifications/{id}` (seulement des chemins de documents ; les règles n'autorisent que le personnel de l'école).
+2. Le Worker passe chaque minute, et tout de suite quand le site l'appelle (`POST /kick` avec le jeton Firebase). Avec un compte de service limité (`parentecole-push` : lecture-écriture Firestore et envoi FCM), il relit les documents, vérifie qu'ils sont bien de cette école, écrit le message et l'envoie à chaque appareil des parents concernés.
+3. **APK** : `google-services.json` en secret GitHub `GOOGLE_SERVICES_JSON` (base64). **Site des parents** : bouton « Activer » à l'accueil et dans « Mon compte » (sur iPhone, après ajout à l'écran d'accueil).
 
-Sont notifiés : absence ou retard, paiement reçu, note de conduite, nouveau devoir, nouveau communiqué.
+Mise en place du Worker (une fois) :
+
+```bash
+cd push && npm install
+npx wrangler login                                   # compte Cloudflare gratuit
+npx wrangler secret put SERVICE_ACCOUNT < cle.json   # clé JSON du compte de service parentecole-push
+npx wrangler deploy                                  # affiche l'adresse du Worker
+```
+
+Puis mettre cette adresse dans `VITE_PUSH_URL` (fichier `.env` et variable GitHub) et redéployer le site de l'école. L'offre gratuite limite chaque passage à une cinquantaine d'envois : un communiqué à toute une grande école part en quelques minutes.
 
 Sans push, l'app affiche ces mêmes nouveautés sous la cloche de l'accueil.
 

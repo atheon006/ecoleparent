@@ -1,0 +1,15 @@
+{
+  "name": "@pe/push",
+  "private": true,
+  "type": "module",
+  "description": "Envoi des notifications push de ParentEcole (Cloudflare Worker, offre gratuite).",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261008.1",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.148.0"
+  }
+}

@@ -33,6 +33,17 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- Notifications push (Firebase Cloud Messaging) : icône blanche, couleur et canal par défaut -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_notify" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_green" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="ecole" />
     </application>
 
     <!-- Permissions -->
@@ -40,5 +51,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Lecture du QR code de la fiche élève -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Notifications (Android 13 et plus) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 </manifest>

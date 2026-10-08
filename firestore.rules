@@ -267,6 +267,22 @@ service cloud.firestore {
       }
     }
 
+    // ── Notifications push ──────────────────────────────────────────────────
+    // Le personnel dépose une demande qui pointe vers ce qu'il vient d'enregistrer ; le Worker
+    // d'envoi (compte de service, hors règles) relit ces documents et vérifie l'école.
+
+    match /notifications/{id} {
+      allow create: if isStaff(request.resource.data.schoolId)
+        && request.resource.data.keys().hasOnly(['schoolId', 'kind', 'paths', 'status', 'createdBy', 'createdAt'])
+        && request.resource.data.kind in ['attendance', 'payment', 'conduct', 'homework', 'announcement']
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdBy == myEmail()
+        && request.resource.data.paths is list
+        && request.resource.data.paths.size() > 0
+        && request.resource.data.paths.size() <= 10;
+      allow read, update, delete: if false;
+    }
+
     // ── Lectures à l'échelle de l'école (groupes de collections) ───────────
 
     match /{path=**}/attendance/{date} {

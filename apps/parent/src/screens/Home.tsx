@@ -4,6 +4,7 @@ import { Card, Progress, cx } from '@pe/shared/ui';
 import { Award, Bell, CalendarDays, Check, ChevronRight, Clock, Megaphone, TriangleAlert, UserRound, X } from 'lucide-react';
 import type { Nav } from '../App';
 import { ChildChips, SectionTitle } from '../components/ChildPicker';
+import { PushPrompt } from '../components/PushPrompt';
 import { useParentData, type Child } from '../data';
 import { accord, alertShort, alertText, alertTitle } from '../format';
 
@@ -49,6 +50,7 @@ export function Home({ nav }: { nav: Nav }) {
       <ChildChips nav={nav} />
 
       <div className="flex flex-col gap-4 px-5">
+        <PushPrompt />
         {others.map((c) => (
           <button
             key={c.id}

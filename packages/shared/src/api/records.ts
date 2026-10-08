@@ -11,6 +11,7 @@ import type {
   PaymentMethod,
   Student,
 } from '../types';
+import { queueNotification } from './notify';
 import { clean, nowISO, refs } from './refs';
 
 // ── Présences ──────────────────────────────────────────────────────────────
@@ -26,6 +27,8 @@ export interface ClassAttendanceInput {
   marks: Record<string, { status: Exclude<AttendanceStatus, 'present'>; reason?: string }>;
   recordedBy: string;
   recordedByName: string;
+  /** Statuts déjà enregistrés ce jour-là : pas de nouvelle notification si rien n'a changé. */
+  previous?: Record<string, AttendanceStatus>;
 }
 
 /** Appel express : enregistre toute la classe, les élèves non cochés sont présents. */
@@ -61,6 +64,12 @@ export async function saveClassAttendance(db: Firestore, input: ClassAttendanceI
       return batch.commit();
     }),
   );
+
+  // Absences et retards nouveaux : notification aux parents (8 élèves au plus par demande).
+  const changed = statuses
+    .filter((s) => (s.status === 'absent' || s.status === 'late') && input.previous?.[s.studentId] !== s.status)
+    .map((s) => `students/${s.studentId}/attendance/${input.date}`);
+  for (let i = 0; i < changed.length; i += 8) void queueNotification(db, input.schoolId, 'attendance', changed.slice(i, i + 8));
 }
 
 /** Le parent justifie une absence ou un retard. */
@@ -116,6 +125,7 @@ export async function recordPayment(db: Firestore, input: PaymentInput): Promise
   });
   const { id: _id, ...data } = payment;
   await setDoc(ref, data);
+  void queueNotification(db, payment.schoolId, 'payment', [ref.path]);
   return payment;
 }
 
@@ -127,6 +137,7 @@ export async function deletePayment(db: Firestore, payment: Pick<Payment, 'id' |
 
 export async function addConduct(db: Firestore, c: Omit<Conduct, 'id' | 'createdAt'>) {
   const ref = await addDoc(refs.studentSub(db, c.studentId, 'conduct'), clean({ ...c, createdAt: nowISO() }));
+  void queueNotification(db, c.schoolId, 'conduct', [ref.path]);
   return ref.id;
 }
 

@@ -6,6 +6,7 @@ import { ArrowLeft, LogOut, Plus, Share2 } from 'lucide-react';
 import { useState } from 'react';
 import type { Nav } from '../App';
 import { Avatar } from '../components/ChildPicker';
+import { PushSettings } from '../components/PushPrompt';
 import { useParentData, type Child } from '../data';
 import { nativeGoogleSignOut, shareText } from '../native';
 
@@ -88,6 +89,8 @@ export function Account({ nav }: { nav: Nav }) {
             l'école.
           </p>
         </section>
+
+        <PushSettings />
 
         <Button
           variant="danger"

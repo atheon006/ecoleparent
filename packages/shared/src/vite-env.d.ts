@@ -11,4 +11,6 @@ interface ImportMetaEnv {
   readonly VITE_ECOLE_URL?: string;
   readonly VITE_PARENT_URL?: string;
   readonly VITE_GOOGLE_WEB_CLIENT_ID?: string;
+  readonly VITE_PUSH_URL?: string;
+  readonly VITE_PUSH_ENABLED?: string;
 }

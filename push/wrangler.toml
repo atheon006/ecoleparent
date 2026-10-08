@@ -1,0 +1,16 @@
+# Worker d'envoi des notifications push (offre gratuite de Cloudflare).
+# Déploiement : npx wrangler deploy ; secret : npx wrangler secret put SERVICE_ACCOUNT < cle.json
+name = "parentecole-push"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+PROJECT_ID = "parentecole-app"
+PARENT_URL = "https://parentecole.web.app"
+ALLOWED_ORIGINS = "https://parentecole-app.web.app,http://localhost:5173,http://127.0.0.1:5173"
+
+[observability]
+enabled = true

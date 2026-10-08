@@ -37,6 +37,7 @@ jobs:
           VITE_GOOGLE_WEB_CLIENT_ID=${{ vars.VITE_GOOGLE_WEB_CLIENT_ID }}
           VITE_ECOLE_URL=${{ vars.VITE_ECOLE_URL }}
           VITE_PARENT_URL=${{ vars.VITE_PARENT_URL }}
+          VITE_PUSH_URL=${{ vars.VITE_PUSH_URL }}
           ENV
           npm run build
           echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"

@@ -59,7 +59,7 @@ export function Login() {
         await signInWithGoogle();
       }
     } catch (err) {
-      setError(errorMessage(err));
+      setError(googleErrorMessage(err));
     } finally {
       setGoogleBusy(false);
     }
@@ -185,6 +185,21 @@ export function Login() {
       </div>
     </div>
   );
+}
+
+/**
+ * Message d'échec de la connexion Google, avec le détail technique entre parenthèses :
+ * sans lui, un refus de Google ou de Firebase ressemblait à « mot de passe incorrect ».
+ */
+function googleErrorMessage(err: unknown): string {
+  const code = (err as { code?: string })?.code ?? '';
+  const raw = String((err as Error)?.message ?? err ?? '').replace(/^Firebase: /, '');
+  if (code === 'auth/invalid-credential') return `Firebase a refusé le compte Google (${raw}). Réessayez ; si cela continue, prévenez l'école.`;
+  if (code === 'auth/network-request-failed') return 'Pas de connexion internet. Réessayez.';
+  if (code === 'auth/user-disabled') return errorMessage(err);
+  if (/28444|developer console|10:|DEVELOPER_ERROR/i.test(raw)) return `Connexion Google non reconnue pour cette version de l'application (${raw}).`;
+  if (/no credential|NoCredential|28433/i.test(raw)) return "Aucun compte Google sur ce téléphone. Ajoutez-en un dans les Paramètres, ou connectez-vous avec votre e-mail.";
+  return raw ? `Connexion Google impossible : ${raw}` : errorMessage(err);
 }
 
 function GoogleMark() {

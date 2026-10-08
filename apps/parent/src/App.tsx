@@ -119,10 +119,14 @@ function Shell() {
     void saveUserProfile(getFirebase().db, uid, { name: displayName, email }).catch(() => undefined);
   }, [uid, displayName, email]);
 
-  // Jeton de notification (si les push sont activées dans cette version de l'APK).
+  // Jeton de notification (si les push sont activées dans cette version de l'APK) ;
+  // toucher une notification ouvre les nouveautés.
   useEffect(() => {
     if (!uid) return;
-    void setupPush((token) => void addFcmToken(getFirebase().db, uid, token).catch(() => undefined));
+    void setupPush(
+      (token) => void addFcmToken(getFirebase().db, uid, token).catch(() => undefined),
+      () => setOverlay('notifications'),
+    );
   }, [uid]);
 
   if (loading) return <Splash />;

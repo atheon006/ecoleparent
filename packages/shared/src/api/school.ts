@@ -10,6 +10,7 @@ import type {
   SchoolEvent,
   StaffRole,
 } from '../types';
+import { queueNotification } from './notify';
 import { clean, nowISO, refs, withoutId } from './refs';
 
 // ── Écoles (super-administrateur) ──────────────────────────────────────────
@@ -138,6 +139,7 @@ export async function deleteFee(db: Firestore, schoolId: string, feeId: string) 
 
 export async function publishAnnouncement(db: Firestore, a: Omit<Announcement, 'id' | 'publishedAt'>) {
   const ref = await addDoc(refs.schoolSub(db, a.schoolId, 'announcements'), clean({ ...a, publishedAt: nowISO() }));
+  void queueNotification(db, a.schoolId, 'announcement', [ref.path]);
   return ref.id;
 }
 
@@ -162,6 +164,7 @@ export async function deleteEvent(db: Firestore, schoolId: string, id: string) {
 
 export async function addHomework(db: Firestore, h: Omit<Homework, 'id' | 'createdAt'>) {
   const ref = await addDoc(refs.schoolSub(db, h.schoolId, 'homework'), clean({ ...h, createdAt: nowISO() }));
+  void queueNotification(db, h.schoolId, 'homework', [ref.path]);
   return ref.id;
 }
 

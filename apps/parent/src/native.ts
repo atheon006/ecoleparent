@@ -88,13 +88,24 @@ export async function nativeGoogleSignOut() {
 /**
  * Notifications push (Firebase Cloud Messaging). Désactivées tant que
  * VITE_PUSH_ENABLED n'est pas « true » : elles exigent google-services.json dans l'APK.
+ * `onOpen` est appelé quand la personne touche une notification.
  */
-export async function setupPush(onToken: (token: string) => void): Promise<void> {
+export async function setupPush(onToken: (token: string) => void, onOpen?: () => void): Promise<void> {
   if (!isNative || import.meta.env.VITE_PUSH_ENABLED !== 'true') return;
   const { PushNotifications } = await import('@capacitor/push-notifications');
+  // Canal « Messages de l'école » (Android 8 et plus) : le Worker d'envoi l'indique dans chaque message.
+  await PushNotifications.createChannel({
+    id: 'ecole',
+    name: "Messages de l'école",
+    description: 'Absences, paiements, conduite, devoirs et communiqués',
+    importance: 4,
+    visibility: 1,
+    vibration: true,
+  }).catch(() => undefined);
   let perm = await PushNotifications.checkPermissions();
   if (perm.receive === 'prompt') perm = await PushNotifications.requestPermissions();
   if (perm.receive !== 'granted') return;
   await PushNotifications.addListener('registration', (t) => onToken(t.value));
+  if (onOpen) await PushNotifications.addListener('pushNotificationActionPerformed', () => onOpen());
   await PushNotifications.register();
 }

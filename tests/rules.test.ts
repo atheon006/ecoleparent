@@ -273,3 +273,30 @@ describe('paiements, conduite, devoirs', () => {
     await assertSucceeds(getDocs(api.q.childConduct(parentDb(), s.id)));
   });
 });
+
+describe('notifications push', () => {
+  const request = (schoolId: string, createdBy: string) => ({
+    schoolId,
+    kind: 'attendance',
+    paths: ['students/s1/attendance/2026-10-08'],
+    status: 'pending',
+    createdBy,
+    createdAt: '2026-10-08T07:50:00Z',
+  });
+
+  it('le personnel dépose une demande pour son école, à son nom seulement', async () => {
+    await assertSucceeds(setDoc(doc(survDb(), 'notifications/n1'), request(SCHOOL, 'surv@horizon.cd')));
+    await assertFails(setDoc(doc(survDb(), 'notifications/n2'), request(OTHER, 'surv@horizon.cd')));
+    await assertFails(setDoc(doc(survDb(), 'notifications/n3'), request(SCHOOL, 'dir@horizon.cd')));
+    await assertFails(setDoc(doc(survDb(), 'notifications/n4'), { ...request(SCHOOL, 'surv@horizon.cd'), status: 'sent' }));
+    await assertFails(setDoc(doc(survDb(), 'notifications/n5'), { ...request(SCHOOL, 'surv@horizon.cd'), title: 'Texte libre' }));
+  });
+
+  it('ni un parent ni un inconnu ne déposent de demande ; personne ne les lit', async () => {
+    await assertFails(setDoc(doc(parentDb(), 'notifications/n1'), request(SCHOOL, 'marie@gmail.com')));
+    await assertFails(setDoc(doc(strangerDb(), 'notifications/n1'), request(SCHOOL, 'x@gmail.com')));
+    await assertSucceeds(setDoc(doc(adminDb(), 'notifications/n9'), request(SCHOOL, 'dir@horizon.cd')));
+    await assertFails(getDoc(doc(adminDb(), 'notifications/n9')));
+    await assertFails(getDoc(doc(superDb(), 'notifications/n9')));
+  });
+});
