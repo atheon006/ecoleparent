@@ -4,7 +4,7 @@ import { MfaChallenge } from '@pe/shared/mfa';
 import { getFirebase, isFirebaseConfigured } from '@pe/shared/firebase';
 import { Button, Loading, ToastProvider } from '@pe/shared/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BottomNav, type Tab } from './components/BottomNav';
+import { BottomNav, SideNav, type Tab } from './components/BottomNav';
 import { ParentDataProvider, useParentData } from './data';
 import { onBackButton, setupPush, setupStatusBar } from './native';
 import { Account } from './screens/Account';
@@ -47,7 +47,7 @@ function Gate() {
 function LoadError() {
   const { signOut } = useAuth();
   return (
-    <div className="safe-top flex h-full flex-col justify-center gap-4 bg-ground p-8">
+    <div className="flex h-full flex-col justify-center gap-4 bg-ground px-8 pt-safe-8 pb-safe-8">
       <h1 className="font-display text-2xl font-bold">Chargement impossible</h1>
       <p className="leading-relaxed text-ink-2">
         Vos informations n'ont pas pu être chargées. Vérifiez votre connexion internet puis réessayez.
@@ -62,10 +62,10 @@ function LoadError() {
   );
 }
 
-function Splash() {
+function Splash({ label = 'ParentEcole' }: { label?: string }) {
   return (
     <div className="flex h-full items-center justify-center bg-brand text-white">
-      <Loading label="ParentEcole" />
+      <Loading label={label} />
     </div>
   );
 }
@@ -81,7 +81,7 @@ export interface Nav {
 
 function Shell() {
   const { user } = useAuth();
-  const { loading, children, error } = useParentData();
+  const { loading, linking, children, error, unread } = useParentData();
   const [tab, setTab] = useState<Tab>('home');
   const [overlay, setOverlay] = useState<Overlay>(null);
   const state = useRef({ tab, overlay });
@@ -110,34 +110,70 @@ function Shell() {
     [],
   );
 
-  // Profil et jeton de notification (si les push sont activées dans cette version de l'APK).
+  // Profil (le nom arrive juste après la création du compte : on réenregistre quand il change).
+  const uid = user?.uid;
+  const displayName = user?.displayName ?? '';
+  const email = user?.email ?? '';
   useEffect(() => {
-    if (!user) return;
-    const { db } = getFirebase();
-    void saveUserProfile(db, user.uid, { name: user.displayName ?? '', email: user.email ?? '' }).catch(() => undefined);
-    void setupPush((token) => void addFcmToken(db, user.uid, token).catch(() => undefined));
-  }, [user]);
+    if (!uid) return;
+    void saveUserProfile(getFirebase().db, uid, { name: displayName, email }).catch(() => undefined);
+  }, [uid, displayName, email]);
+
+  // Jeton de notification (si les push sont activées dans cette version de l'APK).
+  useEffect(() => {
+    if (!uid) return;
+    void setupPush((token) => void addFcmToken(getFirebase().db, uid, token).catch(() => undefined));
+  }, [uid]);
 
   if (loading) return <Splash />;
+  if (linking) return <Splash label="Liaison en cours…" />;
   if (error && children.length === 0) return <LoadError />;
 
   // Pas encore d'enfant lié : on commence par là.
-  if (children.length === 0) return <AddChild first onDone={() => go('home')} />;
+  if (children.length === 0) {
+    return (
+      <div className="h-full lg:mx-auto lg:max-w-xl">
+        <AddChild first onDone={() => go('home')} />
+      </div>
+    );
+  }
 
-  if (overlay === 'add-child') return <AddChild onDone={() => go('home')} onCancel={() => setOverlay(null)} />;
-  if (overlay === 'notifications') return <Notifications nav={nav} />;
-  if (overlay === 'account') return <Account nav={nav} />;
+  // Sur téléphone, ces écrans prennent toute la place ; sur ordinateur, ils s'ouvrent à côté du menu.
+  const overlayScreen =
+    overlay === 'add-child' ? (
+      <AddChild onDone={() => go('home')} onCancel={() => setOverlay(null)} />
+    ) : overlay === 'notifications' ? (
+      <Notifications nav={nav} />
+    ) : overlay === 'account' ? (
+      <Account nav={nav} />
+    ) : null;
 
   return (
-    <div className="flex h-full flex-col bg-ground">
-      <main id="main-scroll" className="flex-1 overflow-y-auto">
-        {tab === 'home' && <Home nav={nav} />}
-        {tab === 'fees' && <FeesScreen nav={nav} />}
-        {tab === 'attendance' && <AttendanceScreen nav={nav} />}
-        {tab === 'homework' && <HomeworkScreen nav={nav} />}
-        {tab === 'school' && <SchoolScreen nav={nav} />}
-      </main>
-      <BottomNav tab={tab} onChange={go} />
+    <div className="flex h-full flex-col bg-ground lg:flex-row">
+      <SideNav
+        tab={overlay ? null : tab}
+        onChange={go}
+        unread={unread}
+        onNotifications={() => setOverlay('notifications')}
+        onAccount={() => setOverlay('account')}
+        current={overlay === 'notifications' || overlay === 'account' ? overlay : null}
+      />
+      {overlayScreen ? (
+        <div className="min-h-0 flex-1 lg:mx-auto lg:w-full lg:max-w-3xl lg:py-4">{overlayScreen}</div>
+      ) : (
+        <>
+          <main id="main-scroll" className="min-h-0 flex-1 overflow-y-auto">
+            <div className="mx-auto w-full max-w-2xl lg:max-w-3xl lg:py-4">
+              {tab === 'home' && <Home nav={nav} />}
+              {tab === 'fees' && <FeesScreen nav={nav} />}
+              {tab === 'attendance' && <AttendanceScreen nav={nav} />}
+              {tab === 'homework' && <HomeworkScreen nav={nav} />}
+              {tab === 'school' && <SchoolScreen nav={nav} />}
+            </div>
+          </main>
+          <BottomNav tab={tab} onChange={go} />
+        </>
+      )}
     </div>
   );
 }

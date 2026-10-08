@@ -66,15 +66,15 @@ export function Login() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-brand">
-      <div className="safe-top flex flex-col gap-6 px-7 pt-12 pb-12 text-white">
+    <div className="h-full overflow-y-auto bg-brand lg:grid lg:grid-cols-[1.1fr_1fr] lg:overflow-hidden">
+      <div className="flex flex-col gap-6 px-7 pt-safe-12 pb-12 text-white lg:mx-auto lg:max-w-xl lg:justify-center lg:px-14">
         <div className="flex items-center gap-3">
           <span className="flex size-12 items-center justify-center rounded-[14px] bg-chalk text-ink">
             <School size={26} aria-hidden="true" />
           </span>
           <span className="font-display text-[22px] font-bold">ParentEcole</span>
         </div>
-        <h1 className="font-display text-[34px] leading-[1.08] font-extrabold">L'école de vos enfants, dans votre poche.</h1>
+        <h1 className="font-display text-[34px] leading-[1.08] font-extrabold lg:text-[46px]">L'école de vos enfants, dans votre poche.</h1>
         <ul className="flex flex-col gap-3">
           {[
             { icon: CalendarCheck, text: "Présence ou absence, chaque matin après l'appel" },
@@ -91,8 +91,8 @@ export function Login() {
         </ul>
       </div>
 
-      <div className="safe-bottom -mt-6 min-h-[55%] rounded-t-[28px] bg-surface px-6 pt-6 pb-8">
-        <form onSubmit={submit} className="mx-auto flex max-w-md flex-col gap-4">
+      <div className="-mt-6 min-h-[55%] rounded-t-[28px] bg-surface px-6 pt-6 pb-safe-8 lg:mt-0 lg:flex lg:min-h-0 lg:items-center lg:overflow-y-auto lg:rounded-none lg:px-12 lg:py-10">
+        <form onSubmit={submit} className="mx-auto flex w-full max-w-md flex-col gap-4">
           {googleSignInAvailable && mode !== 'reset' && (
             <>
               <Button

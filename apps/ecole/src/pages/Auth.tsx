@@ -155,16 +155,32 @@ export function Login() {
 }
 
 export function VerifyEmail() {
-  const { user, sendVerification, refresh, signOut } = useAuth();
+  const { user, sendVerification, checkEmailVerified, signOut } = useAuth();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  // Passe tout seul à la suite dès que le lien a été ouvert (même dans un autre onglet ou sur le téléphone).
+  useEffect(() => {
+    const check = () => {
+      if (document.visibilityState === 'visible') void checkEmailVerified().catch(() => undefined);
+    };
+    const timer = setInterval(check, 4000);
+    window.addEventListener('focus', check);
+    document.addEventListener('visibilitychange', check);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('focus', check);
+      document.removeEventListener('visibilitychange', check);
+    };
+  }, [checkEmailVerified]);
+
   return (
     <Frame>
       <div className="flex flex-col gap-4">
         <h2 className="font-display text-2xl font-bold">Vérifiez votre adresse e-mail</h2>
         <p className="leading-relaxed text-ink-2">
-          Un lien de vérification a été envoyé à <strong>{user?.email}</strong>. Ouvrez-le, puis revenez ici. Pensez à regarder dans les
-          courriers indésirables.
+          Un lien de vérification a été envoyé à <strong>{user?.email}</strong>. Ouvrez-le : cette page passera toute seule à la suite.
+          Pensez à regarder dans les courriers indésirables.
         </p>
         {msg && <div className="rounded-xl bg-brand-soft px-3.5 py-3 text-sm font-semibold text-brand">{msg}</div>}
         <Button
@@ -172,7 +188,8 @@ export function VerifyEmail() {
           loading={busy}
           onClick={async () => {
             setBusy(true);
-            await refresh().catch(() => undefined);
+            const ok = await checkEmailVerified().catch(() => false);
+            if (ok) return;
             setBusy(false);
             setMsg("L'adresse n'est pas encore vérifiée. Ouvrez le lien reçu par e-mail.");
           }}

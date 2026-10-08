@@ -16,12 +16,12 @@ export function Home({ nav }: { nav: Nav }) {
 
   return (
     <div className="pb-6">
-      <header className="safe-top flex items-center justify-between gap-3 px-5 pt-5 pb-2">
+      <header className="flex items-center justify-between gap-3 px-5 pt-safe-5 pb-2">
         <div className="flex flex-col">
           <span className="text-[13px] font-medium text-ink-3">{formatLongCap(today)}</span>
           <span className="font-display text-[26px] font-bold">Bonjour{firstName(user) ? `, ${firstName(user)}` : ''}</span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 lg:hidden">
         <button
           type="button"
           onClick={() => nav.open('account')}

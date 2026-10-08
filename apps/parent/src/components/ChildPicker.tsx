@@ -125,7 +125,7 @@ export function ChildSwitch({ nav }: { nav: Nav }) {
 
 export function ScreenHeader({ title, nav, subtitle }: { title: string; nav: Nav; subtitle?: string }) {
   return (
-    <header className="safe-top flex items-center justify-between gap-3 px-5 pt-5 pb-3">
+    <header className="flex items-center justify-between gap-3 px-5 pt-safe-5 pb-3">
       <div className="flex min-w-0 flex-col">
         <h1 className="font-display text-[26px] font-bold">{title}</h1>
         {subtitle && <span className="truncate text-sm text-ink-3">{subtitle}</span>}

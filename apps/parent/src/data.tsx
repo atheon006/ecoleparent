@@ -51,6 +51,8 @@ export interface FeedItem {
 
 interface ParentData {
   loading: boolean;
+  /** Une liaison vient d'être faite et attend la confirmation du serveur. */
+  linking: boolean;
   /** Impossible de lire la liste des enfants (accès refusé, réseau). */
   error: Error | null;
   links: ParentLink[];
@@ -90,7 +92,9 @@ export function ParentDataProvider({ children: content }: { children: ReactNode 
   const { user } = useAuth();
   const uid = user!.uid;
 
-  const linksLive = useLiveQuery<ParentLink>(`links:${uid}`, () => q.myLinks(db, uid));
+  // Seulement les liaisons enregistrées par le serveur : avant, la fiche de l'élève est refusée
+  // (les règles vérifient la liaison côté serveur) et l'enfant semblait ne pas être lié.
+  const linksLive = useLiveQuery<ParentLink>(`links:${uid}`, () => q.myLinks(db, uid), { confirmedOnly: true });
   const links = useMemo(() => [...linksLive.data].sort((a, b) => a.linkedAt.localeCompare(b.linkedAt)), [linksLive.data]);
 
   // Un abonnement par enfant et par école.
@@ -182,8 +186,9 @@ export function ParentDataProvider({ children: content }: { children: ReactNode 
   }, [seenAt, linksLive.loading, perChild.loading, childList.length, markFeedRead]);
 
   const loading = linksLive.loading || (links.length > 0 && childList.length === 0 && perChild.loading);
+  const linking = linksLive.pending > 0 && childList.length === 0;
 
-  const value: ParentData = { loading, error: linksLive.error, links, children: childList, active, setActiveId, feed, unread, seenAt, markFeedRead };
+  const value: ParentData = { loading, linking, error: linksLive.error, links, children: childList, active, setActiveId, feed, unread, seenAt, markFeedRead };
   return <Ctx.Provider value={value}>{content}</Ctx.Provider>;
 }
 

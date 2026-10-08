@@ -22,7 +22,7 @@ export function Notifications({ nav }: { nav: Nav }) {
 
   return (
     <div className="flex h-full flex-col bg-ground">
-      <header className="safe-top flex items-center gap-2 px-3 pt-3 pb-2">
+      <header className="flex items-center gap-2 px-3 pt-safe-3 pb-2">
         <IconButton label="Retour" onClick={nav.close}>
           <ArrowLeft size={24} aria-hidden="true" />
         </IconButton>

@@ -1,6 +1,14 @@
-import { onSnapshot, type DocumentReference, type Query } from 'firebase/firestore';
+import {
+  onSnapshot,
+  type DocumentReference,
+  type DocumentSnapshot,
+  type FirestoreError,
+  type Query,
+  type QuerySnapshot,
+  type Unsubscribe,
+} from 'firebase/firestore';
 import { useEffect, useRef, useState } from 'react';
-import { fromDoc, fromQuery } from './api/refs';
+import { fromDoc } from './api/refs';
 
 export interface Live<T> {
   data: T;
@@ -10,31 +18,91 @@ export interface Live<T> {
   fromCache: boolean;
 }
 
+/** Délais avant de réessayer un abonnement refusé. */
+const RETRY_DELAYS = [600, 1500, 3500];
+
+/**
+ * onSnapshot qui réessaie après un refus d'accès. Juste après une inscription, la vérification
+ * d'un e-mail ou la liaison d'un enfant, le serveur peut ne pas encore connaître le nouveau droit
+ * (jeton pas encore rafraîchi, écriture pas encore arrivée) : sans nouvel essai, l'écran restait
+ * vide jusqu'au rechargement de la page.
+ */
+function listen<S>(
+  subscribe: (next: (snap: S) => void, fail: (e: FirestoreError) => void) => Unsubscribe,
+  next: (snap: S) => void,
+  fail: (e: FirestoreError) => void,
+): Unsubscribe {
+  let unsub: Unsubscribe | null = null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let attempt = 0;
+  let stopped = false;
+  const start = () => {
+    unsub = subscribe(next, (e) => {
+      unsub = null;
+      if (!stopped && e.code === 'permission-denied' && attempt < RETRY_DELAYS.length) {
+        timer = setTimeout(start, RETRY_DELAYS[attempt++]);
+        return;
+      }
+      fail(e);
+    });
+  };
+  start();
+  return () => {
+    stopped = true;
+    clearTimeout(timer);
+    unsub?.();
+  };
+}
+
+export const listenQuery = (query: Query, next: (snap: QuerySnapshot) => void, fail: (e: FirestoreError) => void, withMetadata = false) =>
+  listen<QuerySnapshot>((n, f) => onSnapshot(query, { includeMetadataChanges: withMetadata }, n, f), next, fail);
+
+export const listenDoc = (ref: DocumentReference, next: (snap: DocumentSnapshot) => void, fail: (e: FirestoreError) => void) =>
+  listen<DocumentSnapshot>((n, f) => onSnapshot(ref, n, f), next, fail);
+
+export interface LiveQueryOptions {
+  /**
+   * Ne garder que les documents enregistrés par le serveur (pas les écritures locales en attente).
+   * Utile quand d'autres abonnements en dépendent et seraient refusés tant que le serveur ne les a pas.
+   */
+  confirmedOnly?: boolean;
+}
+
 /**
  * Abonnement temps réel à une requête Firestore. `key` identifie la requête :
  * l'abonnement est refait seulement quand `key` change. `key` à null = pas de requête.
  */
-export function useLiveQuery<T>(key: string | null, make: () => Query): Live<T[]> {
-  const [state, setState] = useState<Live<T[]>>({ data: [], loading: key !== null, error: null, fromCache: false });
+export function useLiveQuery<T>(key: string | null, make: () => Query, options: LiveQueryOptions = {}): Live<T[]> & { pending: number } {
+  const [state, setState] = useState<Live<T[]> & { pending: number }>({ data: [], loading: key !== null, error: null, fromCache: false, pending: 0 });
   const makeRef = useRef(make);
   makeRef.current = make;
+  const confirmedOnly = options.confirmedOnly ?? false;
 
   useEffect(() => {
     if (key === null) {
-      setState({ data: [], loading: false, error: null, fromCache: false });
+      setState({ data: [], loading: false, error: null, fromCache: false, pending: 0 });
       return;
     }
     setState((s) => ({ ...s, loading: true, error: null }));
-    return onSnapshot(
+    return listenQuery(
       makeRef.current(),
-      { includeMetadataChanges: false },
-      (snap) => setState({ data: fromQuery<T>(snap), loading: false, error: null, fromCache: snap.metadata.fromCache }),
+      (snap) => {
+        const docs = confirmedOnly ? snap.docs.filter((d) => !d.metadata.hasPendingWrites) : snap.docs;
+        setState({
+          data: docs.map((d) => ({ ...d.data(), id: d.id }) as T),
+          loading: false,
+          error: null,
+          fromCache: snap.metadata.fromCache,
+          pending: snap.docs.length - docs.length,
+        });
+      },
       (error) => {
         console.warn(`[firestore] ${key}`, error);
-        setState({ data: [], loading: false, error, fromCache: false });
+        setState({ data: [], loading: false, error, fromCache: false, pending: 0 });
       },
+      confirmedOnly,
     );
-  }, [key]);
+  }, [key, confirmedOnly]);
 
   return state;
 }
@@ -50,7 +118,7 @@ export function useLiveDoc<T>(key: string | null, make: () => DocumentReference)
       return;
     }
     setState((s) => ({ ...s, loading: true, error: null }));
-    return onSnapshot(
+    return listenDoc(
       makeRef.current(),
       (snap) => setState({ data: fromDoc<T>(snap), loading: false, error: null, fromCache: snap.metadata.fromCache }),
       (error) => {
@@ -102,7 +170,7 @@ export function useLiveMany<T>(entries: { key: string; make: () => Query | Docum
     const unsubs = current.map((e) => {
       const target = e.make();
       if (target.type === 'document') {
-        return onSnapshot(
+        return listenDoc(
           target,
           (snap) => {
             const one = fromDoc<T>(snap);
@@ -111,7 +179,7 @@ export function useLiveMany<T>(entries: { key: string; make: () => Query | Docum
           fail(e.key),
         );
       }
-      return onSnapshot(target, (snap) => setData((prev) => ({ ...prev, [e.key]: fromQuery<T>(snap) })), fail(e.key));
+      return listenQuery(target, (snap) => setData((prev) => ({ ...prev, [e.key]: snap.docs.map((d) => ({ ...d.data(), id: d.id }) as T) })), fail(e.key));
     });
     return () => unsubs.forEach((u) => u());
   }, [joined]);

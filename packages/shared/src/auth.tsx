@@ -42,10 +42,19 @@ interface AuthState {
   sendVerification: () => Promise<void>;
   /** Recharge le compte (après vérification de l'e-mail) et rafraîchit le jeton. */
   refresh: () => Promise<void>;
+  /** Relit le compte : renvoie vrai (et rafraîchit le jeton) si l'adresse vient d'être vérifiée. */
+  checkEmailVerified: () => Promise<boolean>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
+
+/** Après le clic sur le lien de vérification, Firebase propose de revenir sur le site d'origine. */
+function verificationSettings() {
+  if (typeof window === 'undefined') return undefined;
+  const { protocol, hostname, origin } = window.location;
+  return protocol === 'https:' && hostname !== 'localhost' ? { url: origin } : undefined;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { auth } = getFirebase();
@@ -90,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = useCallback(async (name: string, email: string, password: string) => {
     const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
     if (name.trim()) await updateProfile(cred.user, { displayName: name.trim() });
-    await sendEmailVerification(cred.user).catch(() => undefined);
+    await sendEmailVerification(cred.user, verificationSettings()).catch(() => undefined);
     await cred.user.getIdToken(true);
   }, [auth]);
 
@@ -127,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [auth]);
 
   const sendVerification = useCallback(async () => {
-    if (auth.currentUser) await sendEmailVerification(auth.currentUser);
+    if (auth.currentUser) await sendEmailVerification(auth.currentUser, verificationSettings());
   }, [auth]);
 
   const refresh = useCallback(async () => {
@@ -138,6 +147,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(auth.currentUser);
     setSecondFactor(result.signInSecondFactor ?? null);
     setVersion((v) => v + 1);
+  }, [auth]);
+
+  const checkEmailVerified = useCallback(async () => {
+    const u = auth.currentUser;
+    if (!u) return false;
+    if (!u.emailVerified) await u.reload();
+    if (!u.emailVerified) return false;
+    // Nouveau jeton avec email_verified, exigé par les règles Firestore.
+    await u.getIdToken(true);
+    setUser(u);
+    setVersion((v) => v + 1);
+    return true;
   }, [auth]);
 
   const signOut = useCallback(async () => {
@@ -162,10 +183,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       resetPassword,
       sendVerification,
       refresh,
+      checkEmailVerified,
       signOut,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [user, version, loading, secondFactor, mfaPending, signIn, signUp, signInWithGoogle, signInWithGoogleIdToken, completeMfa, cancelMfa, resetPassword, sendVerification, refresh, signOut],
+    [user, version, loading, secondFactor, mfaPending, signIn, signUp, signInWithGoogle, signInWithGoogleIdToken, completeMfa, cancelMfa, resetPassword, sendVerification, refresh, checkEmailVerified, signOut],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

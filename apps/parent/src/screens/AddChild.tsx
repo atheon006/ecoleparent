@@ -52,7 +52,7 @@ export function AddChild({ first, onDone, onCancel }: { first?: boolean; onDone:
 
   return (
     <div className="flex h-full flex-col bg-ground">
-      <header className="safe-top flex items-center justify-between px-3 pt-3">
+      <header className="flex items-center justify-between px-3 pt-safe-3">
         {onCancel ? (
           <IconButton label="Retour" onClick={onCancel}>
             <ArrowLeft size={24} aria-hidden="true" />
@@ -125,7 +125,7 @@ export function AddChild({ first, onDone, onCancel }: { first?: boolean; onDone:
           />
         </div>
 
-        <div className="safe-bottom sticky bottom-0 bg-ground px-6 pt-3 pb-6">
+        <div className="sticky bottom-0 bg-ground px-6 pt-3 pb-safe-6">
           <Button type="submit" size="lg" block loading={busy}>
             Ajouter l'enfant
           </Button>
