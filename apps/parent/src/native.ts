@@ -68,7 +68,9 @@ export async function nativeGoogleIdToken(): Promise<string | null> {
   socialReady ??= SocialLogin.initialize({ google: { webClientId: GOOGLE_WEB_CLIENT_ID, mode: 'online' } });
   await socialReady;
   try {
-    const res = await SocialLogin.login({ provider: 'google', options: { scopes: ['email', 'profile'] } });
+    // Pas de `scopes` : e-mail, profil et openid sont inclus d'office, et en passer exige de
+    // modifier l'activité Android principale (« You CANNOT use scopes without modifying… »).
+    const res = await SocialLogin.login({ provider: 'google', options: {} });
     const result = res.result as { idToken?: string | null };
     if (!result.idToken) throw new Error('Google n’a pas renvoyé de jeton. Réessayez.');
     return result.idToken;
