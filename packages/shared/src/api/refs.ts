@@ -8,8 +8,8 @@ import {
   type QuerySnapshot,
 } from 'firebase/firestore';
 
-export type SchoolSub = 'classes' | 'fees' | 'announcements' | 'events' | 'homework';
-export type StudentSub = 'parents' | 'attendance' | 'payments' | 'conduct' | 'homeworkSeen';
+export type SchoolSub = 'classes' | 'fees' | 'announcements' | 'events' | 'homework' | 'evaluations' | 'timetables' | 'permissions' | 'slots' | 'documents';
+export type StudentSub = 'parents' | 'attendance' | 'payments' | 'conduct' | 'homeworkSeen' | 'grades' | 'bulletins' | 'permissionAnswers' | 'requests';
 
 export const refs = {
   school: (db: Firestore, schoolId: string) => doc(db, 'schools', schoolId),
@@ -27,6 +27,12 @@ export const refs = {
   code: (db: Firestore, matricule: string) => doc(db, 'codes', matricule),
   schoolParent: (db: Firestore, schoolId: string, uid: string) => doc(db, 'schoolParents', `${schoolId}_${uid}`),
   user: (db: Firestore, uid: string) => doc(db, 'users', uid),
+  ack: (db: Firestore, schoolId: string, announcementId: string, uid: string) => doc(db, 'schools', schoolId, 'announcements', announcementId, 'acks', uid),
+  acks: (db: Firestore, schoolId: string, announcementId: string) => collection(db, 'schools', schoolId, 'announcements', announcementId, 'acks'),
+  rsvp: (db: Firestore, schoolId: string, eventId: string, uid: string) => doc(db, 'schools', schoolId, 'events', eventId, 'rsvps', uid),
+  rsvps: (db: Firestore, schoolId: string, eventId: string) => collection(db, 'schools', schoolId, 'events', eventId, 'rsvps'),
+  /** Groupe de collections quelconque (confirmations, réponses). */
+  groupOf: (db: Firestore, name: 'acks' | 'rsvps') => collectionGroup(db, name),
 };
 
 export function fromDoc<T>(snap: DocumentSnapshot<DocumentData>): T | null {

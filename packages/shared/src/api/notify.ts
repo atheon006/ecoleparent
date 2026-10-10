@@ -2,7 +2,18 @@ import { getAuth } from 'firebase/auth';
 import { addDoc, collection, type Firestore } from 'firebase/firestore';
 import { nowISO } from './refs';
 
-export type NotificationKind = 'attendance' | 'payment' | 'conduct' | 'homework' | 'announcement';
+export type NotificationKind =
+  | 'attendance'
+  | 'payment'
+  | 'conduct'
+  | 'homework'
+  | 'announcement'
+  | 'grade'
+  | 'bulletin'
+  | 'permission'
+  | 'event'
+  | 'appointment'
+  | 'request';
 
 /** Adresse du Worker qui envoie les notifications push (voir push/README). */
 const PUSH_URL = import.meta.env.VITE_PUSH_URL;

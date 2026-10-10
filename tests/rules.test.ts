@@ -9,7 +9,7 @@ import {
 import { doc, getDoc, getDocs, setDoc, updateDoc, type Firestore } from 'firebase/firestore';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import * as api from '../packages/shared/src/api';
-import type { Member, Student } from '../packages/shared/src/types';
+import type { Bulletin, Member, Student } from '../packages/shared/src/types';
 
 let env: RulesTestEnvironment;
 
@@ -300,3 +300,169 @@ describe('notifications push', () => {
     await assertFails(getDoc(doc(superDb(), 'notifications/n9')));
   });
 });
+
+// ── Fonctionnalités de l'app complète ──────────────────────────────────────
+
+const link = (code: string) => api.linkChild(parentDb(), { uid: 'parent-uid', email: 'marie@gmail.com', name: 'Marie', code, phone: '812345678' });
+const createGrace = (classId = 'c-3sci') =>
+  api.createStudent(adminDb(), { id: SCHOOL, codePrefix: 'CSH' }, { ...baseStudent, schoolId: SCHOOL, classId, firstName: 'Grace', parentPhone: '0811111111' });
+
+describe('notes et bulletins', () => {
+  const evaluation = (classId = 'c-3sci') => ({
+    schoolId: SCHOOL, classId, className: '3e Sci A', subjectId: 'ma', subjectName: 'Maths', year: '2026-2027',
+    period: 'P1' as const, title: 'Interrogation 1', date: '2026-10-08', max: 20, teacherName: 'Prof', createdBy: 'prof@horizon.cd',
+  });
+  const grade = (studentId: string, extra: Record<string, unknown> = {}) => ({
+    evaluationId: 'e1', studentId, schoolId: SCHOOL, classId: 'c-3sci', subjectId: 'ma', subjectName: 'Maths', year: '2026-2027',
+    period: 'P1', title: 'Interro', date: '2026-10-08', score: 12, max: 20, createdBy: 'prof@horizon.cd', updatedAt: '2026-10-08T10:00:00Z', ...extra,
+  });
+
+  it('le professeur note sa classe ; le parent voit la note de son enfant seulement', async () => {
+    const s = await createDavid();
+    const other = await createGrace();
+    const id = await assertSucceeds(api.saveEvaluation(profDb(), { evaluation: evaluation(), scores: { [s.id]: 16, [other.id]: null } }));
+    await link(s.matricule);
+    const mine = await assertSucceeds(getDocs(api.q.childGrades(parentDb(), s.id)));
+    expect(mine.docs[0].data().score).toBe(16);
+    await assertFails(getDocs(api.q.childGrades(parentDb(), other.id)));
+    await assertSucceeds(getDocs(api.q.classEvaluations(parentDb(), SCHOOL, 'c-3sci')));
+    const all = await assertSucceeds(getDocs(api.q.evaluationGrades(profDb(), SCHOOL, id)));
+    expect(all.size).toBe(2);
+  });
+
+  it("pas de note pour une autre classe, au-dessus du maximum, ni par un caissier", async () => {
+    const s = await createDavid();
+    const elsewhere = await createGrace('c-autre');
+    await assertFails(api.saveEvaluation(profDb(), { evaluation: evaluation('c-autre'), scores: {} }));
+    await assertFails(setDoc(doc(profDb(), `students/${s.id}/grades/e1`), grade(s.id, { score: 25 })));
+    await assertFails(setDoc(doc(caisseDb(), `students/${s.id}/grades/e1`), grade(s.id)));
+    // Classe déclarée mensongère : l'élève n'est pas dans la classe du professeur.
+    await assertFails(setDoc(doc(profDb(), `students/${elsewhere.id}/grades/e1`), grade(elsewhere.id)));
+    await assertSucceeds(setDoc(doc(profDb(), `students/${s.id}/grades/e1`), grade(s.id, { score: null })));
+  });
+
+  it('seule la direction publie un bulletin ; le parent le lit', async () => {
+    const s = await createDavid();
+    const b: Bulletin = {
+      id: '2026-2027_P1', studentId: s.id, schoolId: SCHOOL, classId: 'c-3sci', className: '3e Sci A', studentName: 'David Kasereka',
+      year: '2026-2027', period: 'P1', periodLabel: '1re période', lines: [{ subjectId: 'ma', subject: 'Maths', max: 20, points: 16 }],
+      totalMax: 20, totalPoints: 16, percent: 80, rank: 1, classSize: 1, publishedAt: '2026-11-06T10:00:00Z', publishedBy: 'dir@horizon.cd',
+    };
+    await assertFails(api.publishBulletins(profDb(), [b]));
+    await assertSucceeds(api.publishBulletins(adminDb(), [b]));
+    await link(s.matricule);
+    const list = await assertSucceeds(getDocs(api.q.childBulletins(parentDb(), s.id)));
+    expect(list.docs[0].data().percent).toBe(80);
+  });
+});
+
+describe('horaire, autorisations et documents', () => {
+  it('la direction les publie ; le parent les lit sans pouvoir les modifier', async () => {
+    const s = await createDavid();
+    await link(s.matricule);
+    const timetable = { schoolId: SCHOOL, classId: 'c-3sci', slots: [{ day: 1 as const, start: '07:30', end: '08:20', subject: 'Maths' }], updatedBy: 'dir@horizon.cd' };
+    await assertSucceeds(api.saveTimetable(adminDb(), timetable));
+    await assertFails(api.saveTimetable(profDb(), timetable));
+    await assertSucceeds(getDoc(doc(parentDb(), `schools/${SCHOOL}/timetables/c-3sci`)));
+    const slip = { schoolId: SCHOOL, title: 'Sortie au lac Kivu', description: '', date: '2026-10-22', deadline: '2026-10-15', classIds: [], createdBy: 'dir@horizon.cd' };
+    await assertSucceeds(api.savePermission(adminDb(), slip));
+    await assertFails(api.savePermission(parentDb(), slip));
+    await assertSucceeds(getDocs(api.q.permissions(parentDb(), SCHOOL)));
+    await assertSucceeds(api.saveDocument(adminDb(), { schoolId: SCHOOL, title: 'Règlement', url: 'https://exemple.cd/r.pdf', category: 'Règlement' }));
+    await assertSucceeds(getDocs(api.q.documents(parentDb(), SCHOOL)));
+    await assertFails(getDocs(api.q.documents(strangerDb(), SCHOOL)));
+  });
+
+  it('le parent signe une autorisation pour son enfant seulement', async () => {
+    const s = await createDavid();
+    const other = await createGrace();
+    await link(s.matricule);
+    const answer = (studentId: string, value = 'yes') => ({ permissionId: 'p1', studentId, schoolId: SCHOOL, classId: 'c-3sci', studentName: 'David', answer: value as 'yes', uid: 'parent-uid', parentName: 'Marie' });
+    await assertSucceeds(api.answerPermission(parentDb(), answer(s.id)));
+    await assertFails(api.answerPermission(parentDb(), answer(other.id)));
+    await assertFails(setDoc(doc(parentDb(), `students/${s.id}/permissionAnswers/p1`), { ...answer(s.id, 'peut-être'), at: '' }));
+    const seen = await assertSucceeds(getDocs(api.q.permissionAnswers(adminDb(), SCHOOL, 'p1')));
+    expect(seen.size).toBe(1);
+  });
+});
+
+describe('rendez-vous', () => {
+  const slot = (extra: Record<string, unknown> = {}) => ({
+    schoolId: SCHOOL, teacherEmail: 'prof@horizon.cd', teacherName: 'Prof', date: '2026-10-12', start: '13:00', end: '13:15', classIds: ['c-3sci'], ...extra,
+  });
+
+  it('le professeur propose, le parent réserve pour son enfant, le professeur confirme, le parent annule', async () => {
+    const s = await createDavid();
+    await link(s.matricule);
+    await assertSucceeds(api.createSlots(profDb(), [slot()]));
+    await assertFails(api.createSlots(profDb(), [slot({ teacherEmail: 'dir@horizon.cd' })]));
+    const list = await getDocs(api.q.slots(parentDb(), SCHOOL));
+    const ref = { id: list.docs[0].id, schoolId: SCHOOL };
+    await assertSucceeds(api.bookSlot(parentDb(), ref, { uid: 'parent-uid', name: 'Marie', studentId: s.id, studentName: 'David' }));
+    await assertFails(api.bookSlot(strangerDb(), ref, { uid: 'stranger-uid', name: 'X', studentId: s.id, studentName: 'David' }));
+    await assertSucceeds(api.setSlotStatus(profDb(), ref, 'confirmed'));
+    await assertSucceeds(api.cancelBooking(parentDb(), ref));
+  });
+
+  it("pas de réservation pour l'enfant d'un autre ni pour un créneau d'une autre classe", async () => {
+    const s = await createDavid();
+    const other = await createGrace();
+    await link(s.matricule);
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const d = ctx.firestore() as unknown as Firestore;
+      await setDoc(doc(d, `schools/${SCHOOL}/slots/x1`), { ...slot({ classIds: ['c-autre'] }), status: 'open', createdAt: '' });
+      await setDoc(doc(d, `schools/${SCHOOL}/slots/x2`), { ...slot(), status: 'open', createdAt: '' });
+    });
+    await assertFails(api.bookSlot(parentDb(), { id: 'x1', schoolId: SCHOOL }, { uid: 'parent-uid', name: 'Marie', studentId: s.id, studentName: 'David' }));
+    await assertFails(api.bookSlot(parentDb(), { id: 'x2', schoolId: SCHOOL }, { uid: 'parent-uid', name: 'Marie', studentId: other.id, studentName: 'Grace' }));
+  });
+});
+
+describe('demandes des parents', () => {
+  it('le parent demande, la direction répond ; le parent ne valide pas lui-même', async () => {
+    const s = await createDavid();
+    const other = await createGrace();
+    await link(s.matricule);
+    const base = (studentId: string) => ({ studentId, schoolId: SCHOOL, classId: 'c-3sci', studentName: 'David', type: 'attestation' as const, details: 'Pour la banque', uid: 'parent-uid', parentName: 'Marie' });
+    const id = await assertSucceeds(api.createRequest(parentDb(), base(s.id)));
+    await assertFails(api.createRequest(parentDb(), base(other.id)));
+    await assertFails(updateDoc(doc(parentDb(), `students/${s.id}/requests/${id}`), { status: 'done' }));
+    const pending = await assertSucceeds(getDocs(api.q.pendingRequests(adminDb(), SCHOOL)));
+    expect(pending.size).toBe(1);
+    await assertFails(api.handleRequest(caisseDb(), { id, studentId: s.id, schoolId: SCHOOL }, 'rejected', 'Non', 'caisse@horizon.cd'));
+    await assertSucceeds(api.handleRequest(adminDb(), { id, studentId: s.id, schoolId: SCHOOL }, 'done', 'Prête au secrétariat', 'dir@horizon.cd'));
+  });
+});
+
+describe('confirmations de lecture et réunions', () => {
+  it('le parent confirme un communiqué et répond à une réunion, à son nom seulement', async () => {
+    const s = await createDavid();
+    await link(s.matricule);
+    await assertSucceeds(api.acknowledgeAnnouncement(parentDb(), SCHOOL, 'a1', { uid: 'parent-uid', name: 'Marie' }));
+    await assertFails(setDoc(doc(parentDb(), `schools/${SCHOOL}/announcements/a1/acks/autre-uid`), { uid: 'autre-uid', name: 'X', at: '' }));
+    await assertFails(api.acknowledgeAnnouncement(strangerDb(), SCHOOL, 'a1', { uid: 'stranger-uid', name: 'X' }));
+    await assertSucceeds(api.answerEvent(parentDb(), SCHOOL, 'ev1', { uid: 'parent-uid', name: 'Marie' }, 'yes'));
+    await assertFails(setDoc(doc(parentDb(), `schools/${SCHOOL}/events/ev1/rsvps/parent-uid`), { uid: 'parent-uid', name: 'Marie', answer: 'peut-être', at: '' }));
+    const acks = await assertSucceeds(getDocs(api.q.announcementAcks(adminDb(), SCHOOL, 'a1')));
+    expect(acks.size).toBe(1);
+    const mine = await assertSucceeds(getDocs(api.q.myRsvps(parentDb(), 'parent-uid')));
+    expect(mine.size).toBe(1);
+  });
+});
+
+describe("paramètres de l'école et nouveaux types de notification", () => {
+  it('la direction change les coordonnées et le logo, pas le préfixe des matricules', async () => {
+    await assertSucceeds(api.updateSchool(adminDb(), SCHOOL, { email: 'contact@horizon.cd', hours: 'Lundi au vendredi, 7:30 – 12:30', logo: 'data:image/png;base64,AAA' }));
+    await assertFails(updateDoc(doc(adminDb(), `schools/${SCHOOL}`), { codePrefix: 'XXX' }));
+    await assertFails(api.updateSchool(profDb(), SCHOOL, { email: 'x@y.cd' }));
+  });
+
+  it('accepte les nouveaux types de notification, refuse les inconnus', async () => {
+    const req = (kind: string) => ({ schoolId: SCHOOL, kind, paths: ['students/s1/grades/e1'], status: 'pending', createdBy: 'prof@horizon.cd', createdAt: '2026-10-08T07:50:00Z' });
+    for (const kind of ['grade', 'bulletin', 'permission', 'event', 'appointment', 'request']) {
+      await assertSucceeds(setDoc(doc(profDb(), `notifications/k-${kind}`), req(kind)));
+    }
+    await assertFails(setDoc(doc(profDb(), 'notifications/k-x'), req('message')));
+  });
+});
+

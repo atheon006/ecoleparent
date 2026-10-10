@@ -81,6 +81,25 @@ service cloud.firestore {
         || (hasRole(schoolId, ['professeur']) && classId in me().classIds);
     }
 
+    function studentDoc(studentId) {
+      return get(/databases/$(database)/documents/students/$(studentId)).data;
+    }
+
+    // Noter une classe : la direction, ou un professeur de cette classe.
+    function canGrade(schoolId, classId) {
+      return isAdmin(schoolId) || (hasRole(schoolId, ['professeur']) && classId in me().classIds);
+    }
+
+    function validScore() {
+      let d = request.resource.data;
+      return d.max is number && d.max > 0
+        && (d.score == null || (d.score is number && d.score >= 0 && d.score <= d.max));
+    }
+
+    function slotBookingKeys() {
+      return ['status', 'bookedBy', 'bookedByName', 'studentId', 'studentName', 'note', 'bookedAt'];
+    }
+
     function onlyChanged(keys) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
     }
@@ -133,7 +152,7 @@ service cloud.firestore {
       allow read: if isStaff(schoolId) || isSchoolParent(schoolId);
       allow create, delete: if isSuper();
       allow update: if isSuper()
-        || (isAdmin(schoolId) && onlyChanged(['name', 'address', 'phone', 'currency']));
+        || (isAdmin(schoolId) && onlyChanged(['name', 'address', 'phone', 'currency', 'email', 'hours', 'directorName', 'schoolYear', 'logo', 'saturdayClasses']));
 
       match /classes/{id} {
         allow read: if isStaff(schoolId) || isSchoolParent(schoolId);
@@ -153,6 +172,88 @@ service cloud.firestore {
       match /events/{id} {
         allow read: if isStaff(schoolId) || isSchoolParent(schoolId);
         allow write: if isAdmin(schoolId);
+      }
+
+      // Confirmations de lecture des communiqués importants (une par parent).
+      match /announcements/{aid}/acks/{uid} {
+        allow read: if isStaff(schoolId) || (signedIn() && uid == request.auth.uid);
+        allow create: if isSchoolParent(schoolId)
+          && uid == request.auth.uid
+          && request.resource.data.uid == uid
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'at']);
+        allow update, delete: if false;
+      }
+
+      // Réponses des parents aux réunions.
+      match /events/{eid}/rsvps/{uid} {
+        allow read: if isStaff(schoolId) || (signedIn() && uid == request.auth.uid);
+        allow create, update: if isSchoolParent(schoolId)
+          && uid == request.auth.uid
+          && request.resource.data.uid == uid
+          && request.resource.data.answer in ['yes', 'no']
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'answer', 'at']);
+        allow delete: if false;
+      }
+
+      match /evaluations/{id} {
+        allow read: if isStaff(schoolId) || isSchoolParent(schoolId);
+        allow create: if canGrade(schoolId, request.resource.data.classId)
+          && request.resource.data.schoolId == schoolId
+          && request.resource.data.createdBy == myEmail()
+          && request.resource.data.period in ['P1', 'P2', 'EX1', 'P3', 'P4', 'EX2']
+          && request.resource.data.max is number && request.resource.data.max > 0;
+        allow update: if (isAdmin(schoolId) || (canGrade(schoolId, resource.data.classId) && resource.data.createdBy == myEmail()))
+          && request.resource.data.schoolId == schoolId
+          && request.resource.data.classId == resource.data.classId
+          && request.resource.data.period in ['P1', 'P2', 'EX1', 'P3', 'P4', 'EX2'];
+        allow delete: if isAdmin(schoolId) || (canGrade(schoolId, resource.data.classId) && resource.data.createdBy == myEmail());
+      }
+
+      match /timetables/{classId} {
+        allow read: if isStaff(schoolId) || isSchoolParent(schoolId);
+        allow create, update: if isAdmin(schoolId)
+          && request.resource.data.schoolId == schoolId
+          && request.resource.data.classId == classId;
+        allow delete: if isAdmin(schoolId);
+      }
+
+      match /permissions/{id} {
+        allow read: if isStaff(schoolId) || isSchoolParent(schoolId);
+        allow create, update: if isAdmin(schoolId) && request.resource.data.schoolId == schoolId;
+        allow delete: if isAdmin(schoolId);
+      }
+
+      match /documents/{id} {
+        allow read: if isStaff(schoolId) || isSchoolParent(schoolId);
+        allow create, update: if isAdmin(schoolId) && request.resource.data.schoolId == schoolId;
+        allow delete: if isAdmin(schoolId);
+      }
+
+      // Créneaux de rendez-vous : l'enseignant les propose, un parent en réserve un pour son enfant.
+      match /slots/{id} {
+        allow read: if isStaff(schoolId) || isSchoolParent(schoolId);
+        allow create: if isStaff(schoolId)
+          && request.resource.data.schoolId == schoolId
+          && request.resource.data.status == 'open'
+          && (isAdmin(schoolId) || request.resource.data.teacherEmail == myEmail());
+        allow update: if (isStaff(schoolId)
+            && (isAdmin(schoolId) || resource.data.teacherEmail == myEmail())
+            && request.resource.data.schoolId == schoolId
+            && request.resource.data.teacherEmail == resource.data.teacherEmail)
+          || (resource.data.status == 'open'
+            && request.resource.data.status == 'requested'
+            && request.resource.data.bookedBy == request.auth.uid
+            && isParentOf(request.resource.data.studentId)
+            && studentDoc(request.resource.data.studentId).schoolId == schoolId
+            && (resource.data.classIds.size() == 0 || studentDoc(request.resource.data.studentId).classId in resource.data.classIds)
+            && onlyChanged(slotBookingKeys()))
+          || (signedIn()
+            && resource.data.bookedBy == request.auth.uid
+            && resource.data.status in ['requested', 'confirmed']
+            && request.resource.data.status == 'open'
+            && request.resource.data.bookedBy == null
+            && onlyChanged(slotBookingKeys()));
+        allow delete: if isAdmin(schoolId) || (isStaff(schoolId) && resource.data.teacherEmail == myEmail());
       }
 
       match /homework/{id} {
@@ -256,6 +357,50 @@ service cloud.firestore {
           || (isStaff(studentSchool(studentId)) && resource.data.createdBy == myEmail());
       }
 
+      match /grades/{evalId} {
+        allow read: if isParentOf(studentId) || isStaff(studentSchool(studentId));
+        allow create, update: if canGrade(studentSchool(studentId), request.resource.data.classId)
+          && request.resource.data.schoolId == studentSchool(studentId)
+          && request.resource.data.classId == studentDoc(studentId).classId
+          && request.resource.data.studentId == studentId
+          && request.resource.data.evaluationId == evalId
+          && validScore();
+        allow delete: if canGrade(studentSchool(studentId), resource.data.classId);
+      }
+
+      match /bulletins/{key} {
+        allow read: if isParentOf(studentId) || isStaff(studentSchool(studentId));
+        allow create, update: if isAdmin(studentSchool(studentId))
+          && request.resource.data.schoolId == studentSchool(studentId)
+          && request.resource.data.studentId == studentId;
+        allow delete: if isAdmin(studentSchool(studentId));
+      }
+
+      match /permissionAnswers/{permId} {
+        allow read: if isParentOf(studentId) || isStaff(studentSchool(studentId));
+        allow create, update: if isParentOf(studentId)
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.studentId == studentId
+          && request.resource.data.permissionId == permId
+          && request.resource.data.schoolId == studentSchool(studentId)
+          && request.resource.data.answer in ['yes', 'no'];
+        allow delete: if false;
+      }
+
+      match /requests/{id} {
+        allow read: if isParentOf(studentId) || isStaff(studentSchool(studentId));
+        allow create: if isParentOf(studentId)
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.studentId == studentId
+          && request.resource.data.schoolId == studentSchool(studentId)
+          && request.resource.data.status == 'pending'
+          && request.resource.data.type in ['attestation', 'pickup', 'info'];
+        allow update: if (isSuper() || hasRole(studentSchool(studentId), ['admin', 'surveillant']))
+          && onlyChanged(['status', 'answer', 'handledBy', 'handledAt'])
+          && request.resource.data.status in ['done', 'rejected'];
+        allow delete: if isParentOf(studentId) && resource.data.uid == request.auth.uid && resource.data.status == 'pending';
+      }
+
       match /homeworkSeen/{homeworkId} {
         allow read: if isParentOf(studentId) || isStaff(studentSchool(studentId));
         allow create, update: if isParentOf(studentId)
@@ -274,7 +419,7 @@ service cloud.firestore {
     match /notifications/{id} {
       allow create: if isStaff(request.resource.data.schoolId)
         && request.resource.data.keys().hasOnly(['schoolId', 'kind', 'paths', 'status', 'createdBy', 'createdAt'])
-        && request.resource.data.kind in ['attendance', 'payment', 'conduct', 'homework', 'announcement']
+        && request.resource.data.kind in ['attendance', 'payment', 'conduct', 'homework', 'announcement', 'grade', 'bulletin', 'permission', 'event', 'appointment', 'request']
         && request.resource.data.status == 'pending'
         && request.resource.data.createdBy == myEmail()
         && request.resource.data.paths is list
@@ -302,6 +447,31 @@ service cloud.firestore {
     }
 
     match /{path=**}/parents/{uid} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /{path=**}/grades/{id} {
+      allow read: if isStaff(resource.data.schoolId);
+    }
+
+    match /{path=**}/bulletins/{id} {
+      allow read: if isStaff(resource.data.schoolId);
+    }
+
+    match /{path=**}/permissionAnswers/{id} {
+      allow read: if isStaff(resource.data.schoolId);
+    }
+
+    match /{path=**}/requests/{id} {
+      allow read: if isStaff(resource.data.schoolId);
+    }
+
+    // Un parent retrouve ses propres confirmations et réponses dans toute l'école.
+    match /{path=**}/acks/{uid} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /{path=**}/rsvps/{uid} {
       allow read: if signedIn() && resource.data.uid == request.auth.uid;
     }
   }

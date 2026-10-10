@@ -54,7 +54,9 @@ export async function createSchool(db: Firestore, input: NewSchoolInput): Promis
   return ref.id;
 }
 
-export async function updateSchool(db: Firestore, schoolId: string, patch: Partial<Pick<School, 'name' | 'address' | 'phone' | 'currency'>>) {
+export type SchoolSettings = Partial<Pick<School, 'name' | 'address' | 'phone' | 'currency' | 'email' | 'hours' | 'directorName' | 'schoolYear' | 'logo' | 'saturdayClasses'>>;
+
+export async function updateSchool(db: Firestore, schoolId: string, patch: SchoolSettings) {
   await updateDoc(refs.school(db, schoolId), clean(patch));
 }
 
