@@ -1,4 +1,14 @@
-import { computeStudentFinance, formatLongCap, formatMoney, todayISO, type Attendance } from '@pe/shared';
+import {
+  addDays,
+  computeStudentFinance,
+  formatLongCap,
+  formatMoney,
+  holidaysBetween,
+  todayISO,
+  type AppointmentSlot,
+  type Attendance,
+  type ParentRequest,
+} from '@pe/shared';
 import { q } from '@pe/shared/api';
 import { getFirebase } from '@pe/shared/firebase';
 import { useLiveQuery } from '@pe/shared/hooks';
@@ -13,6 +23,16 @@ export function Dashboard() {
   const today = todayISO();
   const attendance = useLiveQuery<Attendance>(`att-day:${schoolId}:${today}`, () => q.schoolAttendanceOn(db, schoolId, today));
   const active = students.filter((s) => s.active);
+  const requests = useLiveQuery<ParentRequest>(`req-pending:${schoolId}`, () => q.pendingRequests(db, schoolId));
+  const justifications = useLiveQuery<Attendance>(`just:${schoolId}`, () => q.pendingJustifications(db, schoolId));
+  const slots = useLiveQuery<AppointmentSlot>(`slots:${schoolId}`, () => q.slots(db, schoolId));
+  const toConfirm = slots.data.filter((s) => s.status === 'requested' && s.date >= today).length;
+  const nextHoliday = holidaysBetween(today, addDays(today, 120))[0];
+  const todos = [
+    { n: requests.data.length, label: 'demande(s) de parents', href: '#/demandes' },
+    { n: justifications.data.length, label: "justification(s) d'absence", href: '#/justifications' },
+    { n: toConfirm, label: 'rendez-vous à confirmer', href: '#/rendez-vous' },
+  ].filter((t) => t.n > 0);
 
   const month = today.slice(0, 7);
   const monthTotal = payments.filter((p) => p.date.startsWith(month)).reduce((s, p) => s + p.amount, 0);
@@ -44,6 +64,21 @@ export function Dashboard() {
         <StatTile label="Encaissé ce mois" value={formatMoney(monthTotal, currency)} sub={`Aujourd'hui : ${formatMoney(todayTotal, currency)}`} />
         <StatTile label="Risque de renvoi" value={risk.length} tone="warn" sub="élèves sous le seuil, échéance proche" />
       </div>
+
+      {(todos.length > 0 || nextHoliday) && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {todos.map((t) => (
+            <a key={t.href} href={t.href} className="flex min-h-10 items-center gap-2 rounded-full bg-warn-soft px-4 text-sm font-semibold text-warn hover:brightness-95">
+              <strong className="text-base">{t.n}</strong> {t.label} à traiter
+            </a>
+          ))}
+          {nextHoliday && (
+            <span className="flex min-h-10 items-center gap-2 rounded-full bg-muted px-4 text-sm text-ink-2">
+              Prochain jour férié : <strong>{formatLongCap(nextHoliday.date)}</strong> · {nextHoliday.name}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Card className="p-5">

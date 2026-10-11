@@ -1,4 +1,4 @@
-import type { ClassRoom, FeeCategory, Member, Payment, School, Student } from '@pe/shared';
+import { schoolYear, type ClassRoom, type FeeCategory, type Member, type Payment, type School, type Student } from '@pe/shared';
 import { q, refs } from '@pe/shared/api';
 import { getFirebase } from '@pe/shared/firebase';
 import { useLiveDoc, useLiveQuery } from '@pe/shared/hooks';
@@ -9,6 +9,8 @@ export interface SchoolData {
   schoolId: string;
   school: School | null;
   currency: string;
+  /** Année scolaire en cours, ex. « 2026-2027 » (paramètres de l'école, sinon déduite de la date). */
+  year: string;
   classes: ClassRoom[];
   students: Student[];
   fees: FeeCategory[];
@@ -52,6 +54,7 @@ export function SchoolDataProvider({ schoolId, children }: { schoolId: string; c
       schoolId,
       school: school.data,
       currency: school.data?.currency ?? '$',
+      year: school.data?.schoolYear || schoolYear(),
       classes: cls,
       students: studs,
       fees: [...fees.data].sort(byName),

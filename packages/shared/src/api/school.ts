@@ -155,6 +155,7 @@ export async function saveEvent(db: Firestore, e: Omit<SchoolEvent, 'id'> & { id
     return e.id;
   }
   const ref = await addDoc(refs.schoolSub(db, e.schoolId, 'events'), withoutId(e));
+  void queueNotification(db, e.schoolId, 'event', [ref.path]);
   return ref.id;
 }
 

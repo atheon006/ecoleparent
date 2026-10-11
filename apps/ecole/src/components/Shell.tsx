@@ -7,9 +7,15 @@ import {
   Award,
   Banknote,
   BookOpen,
+  CalendarCheck,
+  CalendarClock,
   CalendarDays,
   ClipboardCheck,
   FileCheck,
+  FileText,
+  FolderOpen,
+  GraduationCap,
+  Inbox,
   LayoutDashboard,
   LayoutGrid,
   LogOut,
@@ -19,6 +25,7 @@ import {
   Receipt,
   School,
   Settings,
+  Signature,
   TriangleAlert,
   UserCog,
   Users,
@@ -30,20 +37,27 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useAccess, useRole } from '../access';
 import { useInstallPrompt } from '../install';
 import { AnnouncementsPage } from '../pages/Announcements';
+import { AppointmentsPage } from '../pages/Appointments';
+import { BulletinsPage } from '../pages/Bulletins';
 import { CashierPage } from '../pages/Cashier';
 import { ClassesPage } from '../pages/Classes';
 import { ConductPage } from '../pages/Conduct';
 import { Dashboard } from '../pages/Dashboard';
+import { DocumentsPage } from '../pages/Documents';
 import { EventsPage } from '../pages/Events';
 import { FeesPage } from '../pages/Fees';
+import { GradesPage } from '../pages/Grades';
 import { HomeworkPage } from '../pages/Homework';
 import { JustificationsPage } from '../pages/Justifications';
 import { PaymentsPage } from '../pages/Payments';
+import { PermissionsPage } from '../pages/Permissions';
 import { RecoveryPage } from '../pages/Recovery';
+import { RequestsPage } from '../pages/Requests';
 import { RollCallPage } from '../pages/RollCall';
 import { SettingsPage } from '../pages/Settings';
 import { StaffPage } from '../pages/Staff';
 import { StudentsPage } from '../pages/Students';
+import { TimetablePage } from '../pages/Timetable';
 import { navigate, useRoute } from '../router';
 import { useSchool } from '../school';
 import { AccessError } from '../pages/SuperSchools';
@@ -64,16 +78,23 @@ const NAV: NavItem[] = [
   { route: 'eleves', label: 'Élèves', icon: Users, roles: ALL, section: 'Pilotage', page: () => <StudentsPage /> },
   { route: 'classes', label: 'Classes', icon: LayoutGrid, roles: ['admin'], section: 'Pilotage', page: () => <ClassesPage /> },
   { route: 'personnel', label: 'Personnel', icon: UserCog, roles: ['admin'], section: 'Pilotage', page: () => <StaffPage /> },
+  { route: 'notes', label: 'Notes', icon: GraduationCap, roles: ['admin', 'professeur'], section: 'Scolarité', page: () => <GradesPage /> },
+  { route: 'bulletins', label: 'Bulletins', icon: FileText, roles: ['admin'], section: 'Scolarité', page: () => <BulletinsPage /> },
+  { route: 'devoirs', label: 'Devoirs', icon: BookOpen, roles: ['admin', 'professeur'], section: 'Scolarité', page: () => <HomeworkPage /> },
+  { route: 'horaire', label: 'Horaire', icon: CalendarClock, roles: ['admin', 'surveillant', 'professeur'], section: 'Scolarité', page: () => <TimetablePage /> },
   { route: 'appel', label: 'Appel', icon: ClipboardCheck, roles: ['admin', 'surveillant', 'professeur'], section: 'Vie scolaire', page: () => <RollCallPage /> },
   { route: 'justifications', label: 'Justifications', icon: FileCheck, roles: ['admin', 'surveillant'], section: 'Vie scolaire', page: () => <JustificationsPage /> },
-  { route: 'devoirs', label: 'Devoirs', icon: BookOpen, roles: ['admin', 'professeur'], section: 'Vie scolaire', page: () => <HomeworkPage /> },
   { route: 'conduite', label: 'Conduite', icon: Award, roles: ['admin', 'surveillant', 'professeur'], section: 'Vie scolaire', page: () => <ConductPage /> },
+  { route: 'demandes', label: 'Demandes des parents', icon: Inbox, roles: ['admin', 'surveillant'], section: 'Vie scolaire', page: () => <RequestsPage /> },
+  { route: 'rendez-vous', label: 'Rendez-vous', icon: CalendarCheck, roles: ['admin', 'surveillant', 'professeur'], section: 'Vie scolaire', page: () => <AppointmentsPage /> },
   { route: 'caisse', label: 'Encaisser', icon: Banknote, roles: ['admin', 'caissier'], section: 'Finances', page: () => <CashierPage /> },
   { route: 'paiements', label: 'Paiements', icon: Receipt, roles: ['admin', 'caissier'], section: 'Finances', page: () => <PaymentsPage /> },
   { route: 'recouvrement', label: 'Recouvrement', icon: TriangleAlert, roles: ['admin', 'caissier'], section: 'Finances', page: () => <RecoveryPage /> },
   { route: 'frais', label: 'Frais scolaires', icon: Wallet, roles: ['admin'], section: 'Finances', page: () => <FeesPage /> },
   { route: 'communiques', label: 'Communiqués', icon: Megaphone, roles: ['admin'], section: 'Communication', page: () => <AnnouncementsPage /> },
   { route: 'agenda', label: 'Agenda', icon: CalendarDays, roles: ['admin'], section: 'Communication', page: () => <EventsPage /> },
+  { route: 'autorisations', label: 'Autorisations de sortie', icon: Signature, roles: ['admin'], section: 'Communication', page: () => <PermissionsPage /> },
+  { route: 'documents', label: 'Documents', icon: FolderOpen, roles: ['admin'], section: 'Communication', page: () => <DocumentsPage /> },
   { route: 'ecole', label: "Paramètres de l'école", icon: Settings, roles: ['admin'], section: 'Communication', page: () => <SettingsPage /> },
 ];
 

@@ -1,4 +1,4 @@
-import { formatLongCap, todayISO, type Attendance, type AttendanceStatus } from '@pe/shared';
+import { formatLongCap, noSchoolReason, todayISO, type Attendance, type AttendanceStatus, type SchoolEvent } from '@pe/shared';
 import { q, saveClassAttendance } from '@pe/shared/api';
 import { getFirebase } from '@pe/shared/firebase';
 import { useLiveQuery } from '@pe/shared/hooks';
@@ -14,12 +14,14 @@ type Mark = { status: Exclude<AttendanceStatus, 'present'>; reason?: string };
 export function RollCallPage() {
   const { db } = getFirebase();
   const access = useAccess();
-  const { schoolId, students, myClasses } = useSchool();
+  const { schoolId, students, myClasses, school } = useSchool();
   const [classId, setClassId] = useState(myClasses[0]?.id ?? '');
   const [date, setDate] = useState(todayISO());
   const [marks, setMarks] = useState<Record<string, Mark>>({});
   const { busy, run } = useAction();
   const existing = useLiveQuery<Attendance>(`att-day:${schoolId}:${date}`, () => q.schoolAttendanceOn(db, schoolId, date));
+  const events = useLiveQuery<SchoolEvent>(`ev:${schoolId}`, () => q.events(db, schoolId));
+  const noSchool = noSchoolReason(date, { events: events.data, saturdayClasses: school?.saturdayClasses });
   const classStudents = students.filter((s) => s.active && s.classId === classId);
   const recorded = existing.data.filter((a) => a.classId === classId);
 
@@ -92,6 +94,11 @@ export function RollCallPage() {
         </label>
       </div>
 
+      {noSchool && (
+        <div className="mb-3 rounded-xl bg-warn-soft px-3.5 py-2.5 text-sm text-warn">
+          <strong>Jour sans cours : {noSchool}.</strong> Vérifiez la date avant d'enregistrer l'appel.
+        </div>
+      )}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold text-ink-2">{formatLongCap(date)}</span>
         {recorded.length > 0 ? <Badge tone="brand">Appel déjà enregistré, vous pouvez le corriger</Badge> : <Badge tone="neutral">Appel pas encore fait</Badge>}

@@ -1,7 +1,8 @@
-import { doc, setDoc, updateDoc, writeBatch, type Firestore } from 'firebase/firestore';
+import { doc, getDocs, setDoc, updateDoc, writeBatch, type Firestore } from 'firebase/firestore';
 import { averageScore } from '../grades';
 import type { Bulletin, Evaluation, Grade, Subject, Timetable } from '../types';
 import { queueNotification } from './notify';
+import { q } from './queries';
 import { clean, nowISO, refs, withoutId } from './refs';
 
 /**
@@ -85,8 +86,13 @@ export async function saveEvaluation(db: Firestore, input: EvaluationInput): Pro
   return ref.id;
 }
 
-/** Supprime l'évaluation et les notes des élèves. */
-export async function deleteEvaluation(db: Firestore, evaluation: Pick<Evaluation, 'id' | 'schoolId'>, studentIds: string[]) {
+/**
+ * Supprime l'évaluation et les notes des élèves. On relit les notes existantes : les règles
+ * refusent la suppression d'une note qui n'existe pas, ce qui ferait échouer tout le lot.
+ */
+export async function deleteEvaluation(db: Firestore, evaluation: Pick<Evaluation, 'id' | 'schoolId'>) {
+  const snap = await getDocs(q.evaluationGrades(db, evaluation.schoolId, evaluation.id));
+  const studentIds = snap.docs.map((d) => (d.data() as Grade).studentId);
   await Promise.all(
     chunks(studentIds, CHUNK).map((part) => {
       const batch = writeBatch(db);
