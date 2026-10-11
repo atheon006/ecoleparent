@@ -2,44 +2,38 @@ import {
   ATTENDANCE_LABELS,
   formatLongCap,
   formatMonth,
-  formatTime,
+  formatShort,
+  holidayOn,
   parseISODate,
+  schoolBreakOn,
   schoolYear,
-  summarizeAttendance,
   todayISO,
   toISODate,
   type Attendance,
 } from '@pe/shared';
 import { errorMessage, justifyAbsence } from '@pe/shared/api';
 import { getFirebase } from '@pe/shared/firebase';
-import { Badge, Button, Card, ErrorNote, Modal, TextArea, cx, useToast } from '@pe/shared/ui';
-import { ChevronLeft, ChevronRight, Clock, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import type { Nav } from '../App';
-import { ScreenHeader, SectionTitle } from '../components/ChildPicker';
-import { useParentData } from '../data';
+import { Button, ErrorNote, Modal, TextArea, cx, useToast } from '@pe/shared/ui';
+import { useState } from 'react';
+import { Icon } from '../components/Icon';
+import { EmptyState, List, Note, Pill, Row, Section, Tile } from '../components/kit';
+import type { Child } from '../data';
 import { accord } from '../format';
 
 const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
-export function AttendanceScreen({ nav }: { nav: Nav }) {
-  const { active } = useParentData();
+const CELL: Record<Attendance['status'], string> = {
+  present: 'bg-ok-soft text-ok',
+  late: 'bg-warn-soft text-warn',
+  excused: 'bg-info-soft text-info',
+  absent: 'bg-danger-soft text-danger-ink',
+};
+
+export function AttendanceView({ child: c }: { child: Child }) {
   const today = todayISO();
   const [month, setMonth] = useState(() => today.slice(0, 7));
   const [justifying, setJustifying] = useState<Attendance | null>(null);
-
-  const startYear = schoolYear(today).slice(0, 4);
-  const sinceStart = useMemo(
-    () => (active?.attendance ?? []).filter((a) => a.date >= `${startYear}-08-01`),
-    [active?.attendance, startYear],
-  );
-  if (!active) return null;
-
-  const s = summarizeAttendance(sinceStart);
-  const byDate = new Map(active.attendance.map((a) => [a.date, a]));
-  const issues = active.attendance.filter((a) => a.status !== 'present');
-
-  // Mois consultables : de septembre de l'année scolaire jusqu'au mois courant.
+  const startYear = (c.school?.schoolYear || schoolYear(today)).slice(0, 4);
   const firstMonth = `${startYear}-09`;
   const canPrev = month > firstMonth;
   const canNext = month < today.slice(0, 7);
@@ -49,173 +43,177 @@ export function AttendanceScreen({ nav }: { nav: Nav }) {
     setMonth(toISODate(d).slice(0, 7));
   };
 
+  const byDate = new Map(c.attendance.map((a) => [a.date, a]));
+  const monthRecs = c.attendance.filter((a) => a.date.startsWith(month));
+  const count = (s: Attendance['status']) => monthRecs.filter((a) => a.status === s).length;
+  const rate = monthRecs.length ? Math.round(((monthRecs.length - count('absent')) / monthRecs.length) * 100) : null;
+  const issues = monthRecs.filter((a) => a.status !== 'present').sort((a, b) => b.date.localeCompare(a.date));
+
+  const first = parseISODate(`${month}-01`);
+  const offset = (first.getDay() + 6) % 7;
+  const days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  const dates = Array.from({ length: days }, (_, i) => `${month}-${String(i + 1).padStart(2, '0')}`);
+  const offDays = dates
+    .map((d) => {
+      const h = holidayOn(d);
+      const b = schoolBreakOn(d, c.events);
+      return h ? { date: d, name: h.name, holiday: true } : b ? { date: d, name: b.title, holiday: false } : null;
+    })
+    .filter((x): x is { date: string; name: string; holiday: boolean } => !!x);
+  const offByDate = new Map(offDays.map((o) => [o.date, o]));
+  const eventDays = new Set(c.events.filter((e) => e.category !== 'Congé').map((e) => e.date));
+  // Congés sur plusieurs jours : une seule ligne dans la liste.
+  const offList = offDays.filter((o, i) => o.holiday || offDays[i - 1]?.name !== o.name);
+
   return (
-    <div className="pb-6">
-      <ScreenHeader title="Présences" nav={nav} />
-      <div className="flex flex-col gap-4 px-5">
-        <section className="grid grid-cols-3 gap-2">
-          <Stat value={s.present} label={s.present > 1 ? 'jours présent' : 'jour présent'} className="text-brand" />
-          <Stat value={s.absent + s.excused} label={s.absent + s.excused > 1 ? 'absences' : 'absence'} className="text-danger" />
-          <Stat value={s.late} label={s.late > 1 ? 'retards' : 'retard'} className="text-warn" />
-        </section>
-        <span className="-mt-2 text-[13px] text-ink-3">Depuis la rentrée {schoolYear(today)}</span>
-
-        <Card className="flex flex-col gap-2.5 px-3 pt-3.5 pb-3">
-          <div className="flex items-center justify-between">
-            <button type="button" onClick={() => shift(-1)} disabled={!canPrev} aria-label="Mois précédent" className="flex size-11 items-center justify-center rounded-full disabled:opacity-30">
-              <ChevronLeft size={20} aria-hidden="true" />
-            </button>
-            <h2 className="font-display text-lg font-bold" aria-live="polite">
-              {formatMonth(parseISODate(`${month}-01`))}
-            </h2>
-            <button type="button" onClick={() => shift(1)} disabled={!canNext} aria-label="Mois suivant" className="flex size-11 items-center justify-center rounded-full disabled:opacity-30">
-              <ChevronRight size={20} aria-hidden="true" />
-            </button>
+    <>
+      <div className="pe-card mx-4 mt-1.5 p-4">
+        <div className="mb-2.5 flex items-center justify-between">
+          <button type="button" onClick={() => shift(-1)} disabled={!canPrev} aria-label="Mois précédent" className="flex size-9 items-center justify-center rounded-full border border-line bg-surface disabled:opacity-35">
+            <Icon name="caret-left" size={18} />
+          </button>
+          <div className="text-center">
+            <div className="font-display text-[17px] font-extrabold" aria-live="polite">
+              {formatMonth(first)}
+            </div>
+            <div className="text-xs text-ink-3">{rate === null ? "Pas encore d'appel ce mois-ci" : `Taux de présence : ${rate} %`}</div>
           </div>
-          <MonthGrid month={month} today={today} byDate={byDate} />
-          <div className="flex flex-wrap gap-3.5 border-t border-line-soft px-1.5 pt-2 text-[13px] text-ink-2">
-            <Legend className="border border-brand bg-brand-soft" label="Présent" />
-            <Legend className="bg-danger" label="Absent" />
-            <Legend className="bg-chalk" label="En retard" />
-            <Legend className="bg-info" label="Justifiée" />
-          </div>
-        </Card>
-
-        <section className="flex flex-col gap-2.5">
-          <SectionTitle>Absences et retards</SectionTitle>
-          {issues.length === 0 ? (
-            <p className="rounded-2xl border border-line bg-surface p-4 text-sm text-ink-3">
-              Aucune absence ni retard : {active.student.firstName} est {accord(active.student, 'assidu', 'assidue')}.
-            </p>
-          ) : (
-            issues.map((a) => <IssueCard key={a.id} a={a} onJustify={() => setJustifying(a)} />)
-          )}
-        </section>
+          <button type="button" onClick={() => shift(1)} disabled={!canNext} aria-label="Mois suivant" className="flex size-9 items-center justify-center rounded-full border border-line bg-surface disabled:opacity-35">
+            <Icon name="caret-right" size={18} />
+          </button>
+        </div>
+        <div className="grid grid-cols-7 gap-1 text-center">
+          {WEEKDAYS.map((w, i) => (
+            <span key={i} aria-hidden="true" className="py-1 text-[11px] font-bold text-ink-3">
+              {w}
+            </span>
+          ))}
+          {Array.from({ length: offset }, (_, i) => (
+            <span key={`e${i}`} />
+          ))}
+          {dates.map((iso, i) => {
+            const rec = byDate.get(iso);
+            const off = offByDate.get(iso);
+            const wd = (offset + i) % 7;
+            const label = [formatLongCap(iso), rec ? ATTENDANCE_LABELS[rec.status] : null, off?.name].filter(Boolean).join(' · ');
+            return (
+              <span
+                key={iso}
+                title={label}
+                aria-label={label}
+                className={cx(
+                  'relative flex h-[38px] items-center justify-center rounded-xl text-[13px] font-bold tabular-nums',
+                  rec ? CELL[rec.status] : off ? (off.holiday ? 'tone-c' : 'bg-muted text-ink-3') : wd >= 5 ? 'font-medium text-ink-3 opacity-60' : '',
+                  iso === today && 'ring-2 ring-brand ring-inset',
+                )}
+              >
+                {Number(iso.slice(8))}
+                {eventDays.has(iso) && <span className="absolute bottom-[5px] size-[5px] rounded-full bg-chalk" />}
+              </span>
+            );
+          })}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 text-xs text-ink-2">
+          <Legend className="bg-[var(--ok)]" label={`Présent ${count('present')}`} />
+          <Legend className="bg-chalk" label={`Retard ${count('late')}`} />
+          <Legend className="bg-info" label={`Justifiée ${count('excused')}`} />
+          <Legend className="bg-danger" label={`Absent ${count('absent')}`} />
+          <Legend className="tone-c border border-danger/40" label="Férié" />
+        </div>
       </div>
 
-      <JustifyDialog record={justifying} onClose={() => setJustifying(null)} />
-    </div>
-  );
-}
+      {offList.length > 0 && (
+        <>
+          <Section title="Jours sans cours" />
+          <List>
+            {offList.map((o) => (
+              <Row
+                key={o.date}
+                left={<Tile icon={o.holiday ? 'calendar-x' : 'calendar-blank'} tone={o.holiday ? 'c' : 'b'} />}
+                title={o.name}
+                sub={o.holiday ? `${formatLongCap(o.date)} · jour férié légal` : `À partir du ${formatShort(o.date)} · congé de l'école`}
+              />
+            ))}
+          </List>
+        </>
+      )}
 
-function Stat({ value, label, className }: { value: number; label: string; className: string }) {
-  return (
-    <div className="flex flex-col gap-0.5 rounded-2xl border border-line bg-surface p-3">
-      <span className={cx('font-display text-[26px] font-extrabold', className)}>{value}</span>
-      <span className="text-[13px] text-ink-2">{label}</span>
-    </div>
+      {issues.length > 0 ? (
+        <>
+          <Section title="Absences et retards" count={issues.length} />
+          <List>
+            {issues.map((a) => (
+              <IssueRow key={a.id} a={a} onJustify={() => setJustifying(a)} />
+            ))}
+          </List>
+        </>
+      ) : monthRecs.length > 0 ? (
+        <Note icon="sparkle">
+          Aucune absence ni retard ce mois-ci. {c.student.firstName} est {accord(c.student, 'assidu', 'assidue')}, bravo !
+        </Note>
+      ) : (
+        <EmptyState icon="calendar-check" tone="t" title="Rien à signaler">
+          Les présences apparaissent ici dès que l'école fait l'appel.
+        </EmptyState>
+      )}
+      <Note icon="first-aid-kit">Pour justifier une absence ou un retard, touchez-le dans la liste : l'école reçoit votre message aussitôt.</Note>
+      <JustifyDialog record={justifying} onClose={() => setJustifying(null)} />
+    </>
   );
 }
 
 function Legend({ className, label }: { className: string; label: string }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span className={cx('size-3 rounded-full', className)} />
+      <span className={cx('size-2.5 rounded-[3px]', className)} />
       {label}
     </span>
   );
 }
 
-function MonthGrid({ month, today, byDate }: { month: string; today: string; byDate: Map<string, Attendance> }) {
-  const first = parseISODate(`${month}-01`);
-  const offset = (first.getDay() + 6) % 7;
-  const days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
-  const cells: (string | null)[] = [...Array(offset).fill(null)];
-  for (let d = 1; d <= days; d++) cells.push(`${month}-${String(d).padStart(2, '0')}`);
-
-  return (
-    <div>
-      <div aria-hidden="true" className="grid grid-cols-7 text-center text-xs font-bold text-ink-3">
-        {WEEKDAYS.map((w, i) => (
-          <span key={i}>{w}</span>
-        ))}
-      </div>
-      <div className="mt-1 grid grid-cols-7 gap-y-1">
-        {cells.map((iso, i) => {
-          if (!iso) return <span key={`e${i}`} />;
-          const rec = byDate.get(iso);
-          const n = Number(iso.slice(8));
-          const label = rec ? `${formatLongCap(iso)} : ${ATTENDANCE_LABELS[rec.status]}` : formatLongCap(iso);
-          const cls = rec
-            ? {
-                present: 'bg-brand-soft text-brand font-semibold',
-                absent: 'bg-danger text-white font-bold',
-                late: 'bg-chalk text-ink font-bold',
-                excused: 'bg-info text-white font-bold',
-              }[rec.status]
-            : iso > today
-              ? 'text-ink'
-              : 'text-ink-4';
-          return (
-            <span key={iso} className="flex h-[42px] items-center justify-center" title={label}>
-              <span className={cx('flex size-9 items-center justify-center rounded-full text-sm', cls, iso === today && 'ring-2 ring-brand ring-offset-2')} aria-label={label}>
-                {n}
-              </span>
-            </span>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function IssueCard({ a, onJustify }: { a: Attendance; onJustify: () => void }) {
-  const absent = a.status === 'absent' || a.status === 'excused';
+function IssueRow({ a, onJustify }: { a: Attendance; onJustify: () => void }) {
   const canJustify = (a.status === 'absent' || a.status === 'late') && (!a.justificationStatus || a.justificationStatus === 'rejected');
+  const badge =
+    a.status === 'excused' || a.justificationStatus === 'accepted' ? (
+      <Pill tone="info">Justifiée</Pill>
+    ) : a.justificationStatus === 'pending' ? (
+      <Pill tone="warn">En attente</Pill>
+    ) : a.justificationStatus === 'rejected' ? (
+      <Pill tone="bad">Refusée</Pill>
+    ) : a.status === 'late' ? (
+      <Pill tone="warn">Retard</Pill>
+    ) : (
+      <Pill tone="bad">Non justifiée</Pill>
+    );
   return (
-    <Card className="flex flex-col gap-3 p-3.5" as="div">
-      <div className="flex gap-3">
-        <span
-          className={cx(
-            'flex size-10 shrink-0 items-center justify-center rounded-xl',
-            a.status === 'excused' ? 'bg-info text-white' : absent ? 'bg-danger text-white' : 'bg-chalk text-ink',
-          )}
-        >
-          {absent ? <X size={20} strokeWidth={2.4} aria-hidden="true" /> : <Clock size={20} strokeWidth={2.2} aria-hidden="true" />}
-        </span>
-        <div className="flex flex-1 flex-col gap-1">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[15px] font-bold">{formatLongCap(a.date)}</span>
-            <JustificationBadge a={a} />
-          </div>
-          <span className="text-sm leading-relaxed text-ink-2">
-            {ATTENDANCE_LABELS[a.status]}
-            {a.reason ? ` · ${a.reason}` : ''} · signalé à {formatTime(a.recordedAt)} par {a.recordedByName}
-          </span>
-          {a.justification && <span className="text-[13px] text-ink-3 italic">Votre justification : « {a.justification} »</span>}
-        </div>
-      </div>
-      {canJustify && (
-        <Button variant="secondary" onClick={onJustify}>
-          {a.justificationStatus === 'rejected' ? 'Envoyer une autre justification' : a.status === 'late' ? 'Justifier ce retard' : 'Justifier cette absence'}
-        </Button>
-      )}
-    </Card>
+    <Row
+      left={<Tile icon={a.status === 'late' ? 'clock' : a.status === 'excused' ? 'first-aid-kit' : 'warning-circle'} tone={a.status === 'late' ? 'a' : a.status === 'excused' ? 'b' : 'c'} />}
+      title={formatLongCap(a.date)}
+      sub={a.justification ? `Votre message : « ${a.justification} »` : [a.reason, `signalé par ${a.recordedByName}`].filter(Boolean).join(' · ')}
+      end={badge}
+      onClick={canJustify ? onJustify : undefined}
+    />
   );
-}
-
-function JustificationBadge({ a }: { a: Attendance }) {
-  if (a.status === 'excused' || a.justificationStatus === 'accepted') return <Badge tone="info">Justifiée</Badge>;
-  if (a.justificationStatus === 'pending') return <Badge tone="warn">En attente</Badge>;
-  if (a.justificationStatus === 'rejected') return <Badge tone="danger">Refusée</Badge>;
-  if (a.status === 'absent') return <Badge tone="danger">Non justifiée</Badge>;
-  return null;
 }
 
 function JustifyDialog({ record, onClose }: { record: Attendance | null; onClose: () => void }) {
   const toast = useToast();
   const [text, setText] = useState('');
+  const [motif, setMotif] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const MOTIFS = ['Maladie', 'Raison familiale', 'Rendez-vous médical', 'Deuil', 'Transport'];
 
   async function send() {
-    if (!record || !text.trim()) return;
+    const message = [motif, text.trim()].filter(Boolean).join(' : ');
+    if (!record || !message) return;
     setBusy(true);
     setError(null);
     try {
-      await justifyAbsence(getFirebase().db, record.studentId, record.date, text);
+      await justifyAbsence(getFirebase().db, record.studentId, record.date, message);
       toast('Justification envoyée à l’école.');
       setText('');
+      setMotif('');
       onClose();
     } catch (err) {
       setError(errorMessage(err));
@@ -235,8 +233,8 @@ function JustifyDialog({ record, onClose }: { record: Attendance | null; onClose
           <Button variant="ghost" onClick={onClose}>
             Annuler
           </Button>
-          <Button onClick={() => void send()} loading={busy} disabled={!text.trim()}>
-            Envoyer
+          <Button onClick={() => void send()} loading={busy} disabled={!motif && !text.trim()}>
+            Envoyer à l'école
           </Button>
         </>
       }
@@ -245,11 +243,24 @@ function JustifyDialog({ record, onClose }: { record: Attendance | null; onClose
         <div className="flex flex-col gap-3">
           <p className="text-sm text-ink-2">{formatLongCap(record.date)}</p>
           {error && <ErrorNote>{error}</ErrorNote>}
+          <div role="group" aria-label="Motif" className="flex flex-wrap gap-2">
+            {MOTIFS.map((m) => (
+              <button
+                key={m}
+                type="button"
+                aria-pressed={motif === m}
+                onClick={() => setMotif(motif === m ? '' : m)}
+                className={cx('h-9 rounded-full border px-3.5 text-[13px] font-semibold', motif === m ? 'border-brand bg-brand text-white' : 'border-line bg-surface text-ink-2')}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
           <TextArea
-            label="Motif"
+            label="Message pour l'école"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Ex. : malade, certificat médical remis demain."
+            placeholder="Ex. : fièvre, elle reste à la maison ; certificat remis demain."
             maxLength={500}
             hint="L'école verra ce message et pourra accepter ou refuser la justification."
           />

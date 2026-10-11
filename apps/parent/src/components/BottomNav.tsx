@@ -1,20 +1,22 @@
 import { cx } from '@pe/shared/ui';
-import { Bell, BookOpen, CalendarCheck, House, School, UserRound, Wallet, type LucideIcon } from 'lucide-react';
+import type { Tab } from '../nav';
+import { Icon, type IconName } from './Icon';
+import { CountBadge } from './kit';
 
-export type Tab = 'home' | 'fees' | 'attendance' | 'homework' | 'school';
-
-const ITEMS: { tab: Tab; label: string; icon: LucideIcon }[] = [
-  { tab: 'home', label: 'Accueil', icon: House },
-  { tab: 'fees', label: 'Frais', icon: Wallet },
-  { tab: 'attendance', label: 'Présences', icon: CalendarCheck },
-  { tab: 'homework', label: 'Devoirs', icon: BookOpen },
-  { tab: 'school', label: 'École', icon: School },
+const ITEMS: { tab: Tab; label: string; icon: IconName }[] = [
+  { tab: 'home', label: 'Accueil', icon: 'house' },
+  { tab: 'school', label: 'Scolarité', icon: 'graduation-cap' },
+  { tab: 'news', label: 'Annonces', icon: 'megaphone' },
+  { tab: 'fees', label: 'Frais', icon: 'wallet' },
+  { tab: 'more', label: 'Plus', icon: 'squares-four' },
 ];
 
-export function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {
+export type Badges = Partial<Record<Tab, number>>;
+
+export function BottomNav({ tab, onChange, badges }: { tab: Tab; onChange: (t: Tab) => void; badges: Badges }) {
   return (
-    <nav aria-label="Navigation principale" className="grid grid-cols-5 border-t border-line bg-surface px-1.5 pt-1.5 pb-safe-2 lg:hidden">
-      {ITEMS.map(({ tab: t, label, icon: Icon }) => {
+    <nav aria-label="Navigation principale" className="grid grid-cols-5 border-t border-line bg-surface px-1.5 pt-[7px] pb-safe-3 lg:hidden">
+      {ITEMS.map(({ tab: t, label, icon }) => {
         const current = t === tab;
         return (
           <button
@@ -22,12 +24,16 @@ export function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => v
             type="button"
             onClick={() => onChange(t)}
             aria-current={current ? 'page' : undefined}
-            className={cx('flex flex-col items-center gap-0.5 py-1.5 text-xs', current ? 'font-bold text-brand' : 'font-semibold text-ink-3')}
+            className={cx('relative flex flex-col items-center gap-[3px] text-[11px]', current ? 'font-extrabold text-brand' : 'font-semibold text-ink-3')}
           >
-            <span className={cx('flex h-[30px] w-14 items-center justify-center rounded-full transition-colors', current && 'bg-brand-soft')}>
-              <Icon size={22} strokeWidth={current ? 2.1 : 1.9} aria-hidden="true" />
+            <span
+              className={cx('flex h-8 w-14 items-center justify-center rounded-2xl transition-colors', current && 'bg-brand-soft')}
+              style={current ? ({ '--duo': 'var(--color-chalk)', '--duo-op': 1 } as React.CSSProperties) : undefined}
+            >
+              <Icon name={icon} size={24} />
             </span>
             {label}
+            <CountBadge n={badges[t] ?? 0} className="absolute top-0 right-[calc(50%-26px)]" />
           </button>
         );
       })}
@@ -39,55 +45,45 @@ export function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => v
 export function SideNav({
   tab,
   onChange,
+  badges,
   unread,
   onNotifications,
-  onAccount,
-  current,
+  notificationsOpen,
 }: {
-  tab: Tab | null;
+  tab: Tab;
   onChange: (t: Tab) => void;
+  badges: Badges;
   unread: number;
   onNotifications: () => void;
-  onAccount: () => void;
-  current: 'notifications' | 'account' | null;
+  notificationsOpen: boolean;
 }) {
   const item = (active: boolean) =>
-    cx(
-      'flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-[15px] transition-colors',
-      active ? 'bg-brand-soft font-bold text-brand' : 'font-semibold text-ink-2 hover:bg-ground',
-    );
+    cx('flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-[15px] transition-colors', active ? 'bg-brand-soft font-bold text-brand' : 'font-semibold text-ink-2 hover:bg-ground');
   return (
     <nav aria-label="Navigation principale" className="hidden w-64 shrink-0 flex-col border-r border-line bg-surface px-4 py-6 lg:flex">
       <div className="mb-8 flex items-center gap-3 px-2">
         <span className="flex size-10 items-center justify-center rounded-xl bg-chalk text-ink">
-          <School size={22} aria-hidden="true" />
+          <Icon name="student" size={24} />
         </span>
         <span className="font-display text-xl font-bold">ParentEcole</span>
       </div>
       <ul className="flex flex-col gap-1">
-        {ITEMS.map(({ tab: t, label, icon: Icon }) => (
+        {ITEMS.map(({ tab: t, label, icon }) => (
           <li key={t}>
-            <button type="button" onClick={() => onChange(t)} aria-current={t === tab ? 'page' : undefined} className={item(t === tab)}>
-              <Icon size={21} strokeWidth={t === tab ? 2.1 : 1.9} aria-hidden="true" />
-              {label}
+            <button type="button" onClick={() => onChange(t)} aria-current={t === tab && !notificationsOpen ? 'page' : undefined} className={item(t === tab && !notificationsOpen)}>
+              <Icon name={icon} size={22} />
+              <span className="flex-1 text-left">{label}</span>
+              <CountBadge n={badges[t] ?? 0} />
             </button>
           </li>
         ))}
       </ul>
       <ul className="mt-auto flex flex-col gap-1 border-t border-line pt-4">
         <li>
-          <button type="button" onClick={onNotifications} aria-current={current === 'notifications' ? 'page' : undefined} className={item(current === 'notifications')}>
-            <Bell size={21} aria-hidden="true" />
+          <button type="button" onClick={onNotifications} aria-current={notificationsOpen ? 'page' : undefined} className={item(notificationsOpen)}>
+            <Icon name="bell" size={22} />
             <span className="flex-1 text-left">Nouveautés</span>
-            {unread > 0 && (
-              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-[11px] font-bold text-white">{unread > 9 ? '9+' : unread}</span>
-            )}
-          </button>
-        </li>
-        <li>
-          <button type="button" onClick={onAccount} aria-current={current === 'account' ? 'page' : undefined} className={item(current === 'account')}>
-            <UserRound size={21} aria-hidden="true" />
-            Mon compte
+            <CountBadge n={unread} />
           </button>
         </li>
       </ul>

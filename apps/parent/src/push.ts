@@ -1,7 +1,7 @@
-import { addFcmToken } from '@pe/shared/api';
+import { addFcmToken, saveDevice } from '@pe/shared/api';
 import { getFirebase } from '@pe/shared/firebase';
 import { useCallback, useEffect, useState } from 'react';
-import { isNative } from './native';
+import { deviceLabel, isNative, rememberPushToken } from './native';
 
 /** Notifications du navigateur (site des parents) : état de l'autorisation sur cet appareil. */
 export type WebPushState = 'unsupported' | 'default' | 'denied' | 'granted';
@@ -21,7 +21,10 @@ async function subscribe(uid: string): Promise<void> {
   const registration = await navigator.serviceWorker.register('/push-sw.js');
   const { app, db } = getFirebase();
   const token = await getToken(getMessaging(app), { serviceWorkerRegistration: registration });
-  if (token) await addFcmToken(db, uid, token);
+  if (!token) return;
+  rememberPushToken(token);
+  await addFcmToken(db, uid, token);
+  await saveDevice(db, uid, { token, label: deviceLabel(), platform: 'web', lastSeen: new Date().toISOString() }).catch(() => undefined);
 }
 
 export function useWebPush(uid: string | undefined) {

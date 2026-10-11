@@ -115,7 +115,7 @@ function FieldShell({ label, hint, error, id, children, className }: FieldShellP
 }
 
 const inputClass =
-  'w-full rounded-xl border border-[#c4ccc6] bg-surface px-3.5 text-[16px] text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:bg-muted';
+  'w-full rounded-xl border border-field bg-surface px-3.5 text-[16px] text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:bg-muted';
 
 type FieldBase = { label: string; hint?: ReactNode; error?: string | null; wrapperClassName?: string };
 
@@ -154,7 +154,7 @@ export function TextArea({ label, hint, error, wrapperClassName, className, id, 
 export function Checkbox({ label, hint, className, ...rest }: { label: ReactNode; hint?: ReactNode } & InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className={cx('flex min-h-11 cursor-pointer items-start gap-3 py-1', className)}>
-      <input type="checkbox" {...rest} className="mt-0.5 size-5 shrink-0 accent-[#1e4a38]" />
+      <input type="checkbox" {...rest} className="mt-0.5 size-5 shrink-0 accent-brand" />
       <span className="flex flex-col">
         <span className="text-[15px] font-semibold">{label}</span>
         {hint && <span className="text-[13px] text-ink-3">{hint}</span>}
@@ -190,7 +190,7 @@ export function Card({ children, className, as: As = 'section' }: { children: Re
 
 export function Empty({ icon, title, children, action }: { icon?: ReactNode; title: string; children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-[20px] border border-dashed border-[#c4ccc6] px-6 py-10 text-center">
+    <div className="flex flex-col items-center gap-3 rounded-[20px] border border-dashed border-field px-6 py-10 text-center">
       {icon && <div className="flex size-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">{icon}</div>}
       <p className="font-display text-lg font-bold">{title}</p>
       {children && <div className="max-w-sm text-[14px] leading-relaxed text-ink-3">{children}</div>}

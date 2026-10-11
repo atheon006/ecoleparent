@@ -1,14 +1,19 @@
 import { initials, Modal, cx } from '@pe/shared/ui';
-import { Check, ChevronDown, Plus } from 'lucide-react';
-import { useState } from 'react';
-import type { Nav } from '../App';
+import { useState, type ReactNode } from 'react';
+import type { Nav } from '../nav';
 import { useParentData, type Child } from '../data';
+import { Icon } from './Icon';
 
-export function Avatar({ child, size = 38, active = true }: { child: Child; size?: number; active?: boolean }) {
+const AVATAR_TONES = ['tone-a', 'tone-b', 'tone-t', 'tone-v', 'tone-c', 'tone-g'];
+
+/** Initiales de l'enfant dans une pastille colorée (une couleur par enfant). */
+export function Avatar({ child, size = 38 }: { child: Child; size?: number }) {
+  const { children } = useParentData();
+  const index = Math.max(0, children.findIndex((c) => c.id === child.id));
   return (
     <span
       aria-hidden="true"
-      className={cx('flex shrink-0 items-center justify-center rounded-full font-bold', active ? 'bg-chalk text-ink' : 'bg-brand-soft text-brand')}
+      className={cx('flex shrink-0 items-center justify-center rounded-full font-display font-extrabold tracking-wide', AVATAR_TONES[index % AVATAR_TONES.length])}
       style={{ width: size, height: size, fontSize: size * 0.36 }}
     >
       {initials(child.student.firstName, child.student.lastName)}
@@ -22,7 +27,7 @@ const hasDanger = (c: Child) => c.finance.alerts[0]?.level === 'danger';
 export function ChildChips({ nav }: { nav: Nav }) {
   const { children, active, setActiveId } = useParentData();
   return (
-    <div className="scrollbar-none flex gap-2 overflow-x-auto px-5 pt-2 pb-3.5">
+    <div role="group" aria-label="Mes enfants" className="scrollbar-none flex gap-2 overflow-x-auto px-4 pb-3">
       {children.map((c) => {
         const selected = c.id === active?.id;
         return (
@@ -32,36 +37,28 @@ export function ChildChips({ nav }: { nav: Nav }) {
             aria-pressed={selected}
             onClick={() => setActiveId(c.id)}
             className={cx(
-              'relative flex min-h-[52px] shrink-0 items-center gap-2.5 rounded-full border py-1.5 pr-3.5 pl-1.5',
-              selected ? 'border-brand bg-brand text-white' : 'border-line bg-surface text-ink',
+              'relative inline-flex h-11 shrink-0 items-center gap-2 rounded-full border bg-surface pr-3.5 pl-[5px] text-[13.5px] font-bold',
+              selected ? 'border-brand ring-2 ring-brand/35' : 'border-line',
             )}
           >
-            <Avatar child={c} active={selected} />
-            <span className="flex flex-col items-start leading-tight">
-              <span className="text-[15px] font-bold">{c.student.firstName}</span>
-              <span className={cx('text-xs', selected ? 'text-brand-ink' : 'text-ink-3')}>{c.student.className}</span>
-            </span>
-            {!selected && hasDanger(c) && (
-              <span className="absolute top-1 left-9 size-2.5 rounded-full border-2 border-white bg-danger">
-                <span className="sr-only">Alerte</span>
-              </span>
-            )}
+            <Avatar child={c} size={34} />
+            {c.student.firstName}
+            {!selected && hasDanger(c) && <span className="absolute top-0.5 left-7 size-2.5 rounded-full border-2 border-surface bg-danger" aria-label="Alerte" />}
           </button>
         );
       })}
       <button
         type="button"
-        aria-label="Ajouter un enfant"
-        onClick={() => nav.open('add-child')}
-        className="flex size-[52px] shrink-0 items-center justify-center rounded-full border border-dashed border-[#9aa79f] text-brand"
+        onClick={() => nav.push({ name: 'add-child' })}
+        className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 text-[13.5px] font-semibold text-ink-3"
       >
-        <Plus size={22} aria-hidden="true" />
+        <Icon name="plus" size={18} /> Ajouter
       </button>
     </div>
   );
 }
 
-/** Puce compacte (en-tête des autres onglets) qui ouvre la liste des enfants. */
+/** Puce compacte (en-tête des onglets) qui ouvre la liste des enfants. */
 export function ChildSwitch({ nav }: { nav: Nav }) {
   const { children, active, setActiveId } = useParentData();
   const [open, setOpen] = useState(false);
@@ -72,13 +69,13 @@ export function ChildSwitch({ nav }: { nav: Nav }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="relative flex min-h-11 items-center gap-2 rounded-full border border-line bg-surface py-1 pr-3 pl-1 text-ink"
+        className="relative flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface py-1 pr-2.5 pl-1 text-ink"
         aria-label={`Enfant affiché : ${active.student.firstName}. Changer`}
       >
         <Avatar child={active} size={34} />
         <span className="text-sm font-bold">{active.student.firstName}</span>
-        <ChevronDown size={16} aria-hidden="true" />
-        {others.some(hasDanger) && <span className="absolute top-0.5 right-0.5 size-2.5 rounded-full border-2 border-white bg-danger" />}
+        <Icon name="caret-down" size={16} />
+        {others.some(hasDanger) && <span className="absolute top-0.5 right-0.5 size-2.5 rounded-full border-2 border-surface bg-danger" />}
       </button>
       <Modal open={open} onClose={() => setOpen(false)} title="Mes enfants" sheet>
         <ul className="flex flex-col gap-2 pb-2">
@@ -92,7 +89,7 @@ export function ChildSwitch({ nav }: { nav: Nav }) {
                 }}
                 className={cx('flex w-full items-center gap-3 rounded-2xl border p-3 text-left', c.id === active.id ? 'border-brand bg-brand-soft' : 'border-line')}
               >
-                <Avatar child={c} size={42} active={c.id === active.id} />
+                <Avatar child={c} size={42} />
                 <span className="flex flex-1 flex-col">
                   <span className="text-[15px] font-bold">
                     {c.student.firstName} {c.student.lastName}
@@ -101,7 +98,7 @@ export function ChildSwitch({ nav }: { nav: Nav }) {
                     {c.student.className} · {c.school?.name ?? ''}
                   </span>
                 </span>
-                {c.id === active.id && <Check size={20} className="text-brand" aria-label="Affiché" />}
+                {c.id === active.id && <Icon name="check-circle" size={22} className="text-brand" label="Affiché" />}
               </button>
             </li>
           ))}
@@ -110,11 +107,11 @@ export function ChildSwitch({ nav }: { nav: Nav }) {
               type="button"
               onClick={() => {
                 setOpen(false);
-                nav.open('add-child');
+                nav.push({ name: 'add-child' });
               }}
-              className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-dashed border-[#9aa79f] p-3 font-bold text-brand"
+              className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-dashed border-field p-3 font-bold text-brand"
             >
-              <Plus size={20} aria-hidden="true" /> Ajouter un enfant
+              <Icon name="user-plus" size={22} /> Lier un autre enfant
             </button>
           </li>
         </ul>
@@ -123,23 +120,31 @@ export function ChildSwitch({ nav }: { nav: Nav }) {
   );
 }
 
-export function ScreenHeader({ title, nav, subtitle }: { title: string; nav: Nav; subtitle?: string }) {
+/** En-tête d'un onglet : grand titre, sous-titre et sélecteur d'enfant. */
+export function RootHeader({ title, subtitle, nav, right }: { title: string; subtitle?: string; nav: Nav; right?: ReactNode }) {
   return (
-    <header className="flex items-center justify-between gap-3 px-5 pt-safe-5 pb-3">
-      <div className="flex min-w-0 flex-col">
-        <h1 className="font-display text-[26px] font-bold">{title}</h1>
-        {subtitle && <span className="truncate text-sm text-ink-3">{subtitle}</span>}
+    <header className="flex items-center gap-2.5 px-[18px] pt-safe-5 pb-2.5">
+      <div className="min-w-0 flex-1">
+        <h1 className="font-display text-[28px] leading-[1.05] font-extrabold tracking-tight">{title}</h1>
+        {subtitle && <p className="truncate text-[13px] font-medium text-ink-3">{subtitle}</p>}
       </div>
-      <ChildSwitch nav={nav} />
+      {right ?? <ChildSwitch nav={nav} />}
     </header>
   );
 }
 
-export function SectionTitle({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
+/** En-tête d'un écran empilé : bouton retour, titre, action à droite. */
+export function SubHeader({ title, subtitle, onBack, right }: { title: string; subtitle?: string; onBack: () => void; right?: ReactNode }) {
   return (
-    <div className="flex min-h-11 items-center justify-between">
-      <h2 className="font-display text-lg font-bold">{children}</h2>
-      {action}
-    </div>
+    <header className="flex items-center gap-2.5 px-4 pt-safe-4 pb-2.5">
+      <button type="button" onClick={onBack} aria-label="Retour" className="flex size-[42px] shrink-0 items-center justify-center rounded-full border border-line bg-surface">
+        <Icon name="caret-left" size={22} />
+      </button>
+      <div className="min-w-0 flex-1">
+        <h1 className="truncate font-display text-[19px] leading-tight font-extrabold">{title}</h1>
+        {subtitle && <p className="truncate text-[13px] font-medium text-ink-3">{subtitle}</p>}
+      </div>
+      {right}
+    </header>
   );
 }

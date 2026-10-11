@@ -1,130 +1,71 @@
-import { errorMessage, unlinkChild } from '@pe/shared/api';
+import { errorMessage, saveUserProfile } from '@pe/shared/api';
 import { useAuth } from '@pe/shared/auth';
 import { getFirebase } from '@pe/shared/firebase';
-import { Button, Card, IconButton, Modal, useToast } from '@pe/shared/ui';
-import { ArrowLeft, LogOut, Plus, Share2 } from 'lucide-react';
-import { useState } from 'react';
-import type { Nav } from '../App';
-import { Avatar } from '../components/ChildPicker';
-import { PushSettings } from '../components/PushPrompt';
-import { useParentData, type Child } from '../data';
-import { nativeGoogleSignOut, shareText } from '../native';
+import { ErrorNote, Field, useToast } from '@pe/shared/ui';
+import { updateProfile } from 'firebase/auth';
+import { useState, type FormEvent } from 'react';
+import { SubHeader } from '../components/ChildPicker';
+import { Btn, List, Note, Row, Section, Tile } from '../components/kit';
+import { nameInitials } from '../helpers';
+import type { Nav } from '../nav';
 
 export function Account({ nav }: { nav: Nav }) {
-  const { user, signOut } = useAuth();
-  const { children, links } = useParentData();
+  const { user, refresh, resetPassword } = useAuth();
   const toast = useToast();
-  const [removing, setRemoving] = useState<Child | null>(null);
+  const [name, setName] = useState(user?.displayName ?? '');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const usesPassword = !!user?.providerData.some((p) => p.providerId === 'password');
+  const usesGoogle = !!user?.providerData.some((p) => p.providerId === 'google.com');
 
-  async function confirmRemove() {
-    if (!removing) return;
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    if (!user || !name.trim()) return;
     setBusy(true);
+    setError(null);
     try {
-      await unlinkChild(getFirebase().db, removing.link, links.filter((l) => l.studentId !== removing.id));
-      toast(`${removing.student.firstName} a été retiré de votre compte.`);
-      setRemoving(null);
+      await updateProfile(user, { displayName: name.trim() });
+      await saveUserProfile(getFirebase().db, user.uid, { name: name.trim(), email: user.email ?? '' });
+      await refresh();
+      toast('Nom enregistré.');
     } catch (err) {
-      toast(errorMessage(err), 'error');
+      setError(errorMessage(err));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="flex h-full flex-col bg-ground">
-      <header className="flex items-center gap-2 px-3 pt-safe-3 pb-2">
-        <IconButton label="Retour" onClick={nav.close}>
-          <ArrowLeft size={24} aria-hidden="true" />
-        </IconButton>
-        <h1 className="font-display text-2xl font-bold">Mon compte</h1>
-      </header>
-      <main className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 pb-8">
-        <Card className="flex flex-col gap-0.5 p-4">
-          <span className="text-[17px] font-bold">{user?.displayName || 'Parent'}</span>
-          <span className="text-sm text-ink-3">{user?.email}</span>
-        </Card>
-
-        <section className="flex flex-col gap-2.5">
-          <h2 className="font-display text-lg font-bold">Mes enfants</h2>
-          {children.map((c) => (
-            <Card key={c.id} className="flex flex-col gap-3 p-3.5" as="div">
-              <div className="flex items-center gap-3">
-                <Avatar child={c} size={42} />
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-[15px] font-bold">
-                    {c.student.firstName} {c.student.lastName}
-                  </span>
-                  <span className="truncate text-[13px] text-ink-3">
-                    {c.student.className} · {c.school?.name}
-                  </span>
-                  <span className="text-[13px] tracking-wide text-ink-2">{c.student.matricule}</span>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={<Share2 size={16} aria-hidden="true" />}
-                  onClick={() =>
-                    void shareText(
-                      'Code élève ParentEcole',
-                      `Code élève de ${c.student.firstName} ${c.student.lastName} sur ParentEcole : ${c.student.matricule}`,
-                    ).catch(() => undefined)
-                  }
-                >
-                  Partager le code
-                </Button>
-                <Button variant="ghost" size="sm" className="text-danger-ink" onClick={() => setRemoving(c)}>
-                  Retirer
-                </Button>
-              </div>
-            </Card>
-          ))}
-          <Button variant="secondary" icon={<Plus size={18} aria-hidden="true" />} onClick={() => nav.open('add-child')}>
-            Ajouter un enfant
-          </Button>
-          <p className="text-[13px] leading-relaxed text-ink-3">
-            L'autre parent peut suivre les mêmes enfants avec son propre compte : il lui suffit du code élève et de son numéro enregistré à
-            l'école.
-          </p>
-        </section>
-
-        <PushSettings />
-
-        <Button
-          variant="danger"
-          icon={<LogOut size={18} aria-hidden="true" />}
-          onClick={async () => {
-            await nativeGoogleSignOut();
-            await signOut();
-          }}
-        >
-          Se déconnecter
-        </Button>
-        <p className="text-center text-xs text-ink-3">ParentEcole · version {__APP_VERSION__}</p>
-      </main>
-
-      <Modal
-        open={!!removing}
-        onClose={() => setRemoving(null)}
-        title="Retirer cet enfant ?"
-        sheet
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setRemoving(null)}>
-              Annuler
-            </Button>
-            <Button variant="danger" loading={busy} onClick={() => void confirmRemove()}>
-              Retirer
-            </Button>
-          </>
-        }
-      >
-        <p className="text-[15px] leading-relaxed text-ink-2">
-          Vous ne verrez plus les informations de {removing?.student.firstName}. Vous pourrez le rajouter plus tard avec son code élève.
-        </p>
-      </Modal>
+    <div>
+      <SubHeader title="Mon compte" onBack={nav.back} />
+      <div className="flex justify-center pt-1 pb-3">
+        <span className="tone-a flex size-[84px] items-center justify-center rounded-full font-display text-[28px] font-extrabold">{nameInitials(name || user?.email || 'P')}</span>
+      </div>
+      <form onSubmit={save} className="flex flex-col gap-3.5 px-[18px]">
+        {error && <ErrorNote>{error}</ErrorNote>}
+        <Field label="Nom affiché" value={name} onChange={(e) => setName(e.target.value)} hint="L'école voit ce nom quand vous justifiez une absence ou signez une autorisation." required />
+        <Field label="E-mail" value={user?.email ?? ''} readOnly disabled />
+        <Btn type="submit" block icon="check" loading={busy} disabled={name.trim() === (user?.displayName ?? '')}>
+          Enregistrer
+        </Btn>
+      </form>
+      <Section title="Connexion" />
+      <List>
+        {usesGoogle && <Row left={<Tile icon="google-logo" tone="b" />} title="Compte Google" sub="Vous vous connectez avec Google" />}
+        {usesPassword && (
+          <Row
+            left={<Tile icon="lock-key" tone="g" />}
+            title="Changer le mot de passe"
+            sub="Un lien vous est envoyé par e-mail"
+            onClick={() =>
+              void resetPassword(user!.email ?? '')
+                .then(() => toast(`Lien envoyé à ${user!.email}.`))
+                .catch((err) => toast(errorMessage(err), 'error'))
+            }
+          />
+        )}
+      </List>
+      <Note icon="shield-check">Votre numéro de téléphone reste celui donné à l'école : pour le changer, faites une demande de correction depuis le profil de l'enfant.</Note>
     </div>
   );
 }

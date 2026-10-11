@@ -85,7 +85,7 @@ export function PushSettings() {
           : 'Recevez une alerte dès qu’une absence, un paiement ou un communiqué est enregistré.';
   return (
     <section className="flex flex-col gap-2.5">
-      <h2 className="font-display text-lg font-bold">Notifications</h2>
+      <h2 className="font-display text-lg font-bold">Sur cet appareil</h2>
       <Card className="flex flex-col gap-3 p-4" as="div">
         <p className="text-[14px] leading-relaxed text-ink-2">{text}</p>
         {state === 'default' && (

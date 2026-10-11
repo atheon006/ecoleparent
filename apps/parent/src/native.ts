@@ -2,6 +2,25 @@ import { Capacitor } from '@capacitor/core';
 
 export const isNative = Capacitor.isNativePlatform();
 
+/** Nom lisible de l'appareil, pour la liste « Appareils qui reçoivent les notifications ». */
+export function deviceLabel(): string {
+  const ua = navigator.userAgent;
+  const model = /Android [\d.]+; ([^;)]+)/.exec(ua)?.[1]?.replace(/ Build.*$/, '');
+  if (isNative) return model ? `Application · ${model}` : 'Application Android';
+  const browser = /Edg\//.test(ua) ? 'Edge' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'Navigateur';
+  const system = model ?? /(Windows|Mac OS X|Linux|iPhone|iPad)/.exec(ua)?.[1] ?? 'ordinateur';
+  return `${browser} · ${system}`;
+}
+
+/** Jeton de notification de cet appareil (pour le reconnaître dans la liste des appareils). */
+export function rememberPushToken(token: string) {
+  try {
+    localStorage.setItem('pe.pushToken', token);
+  } catch {
+    /* sans conséquence */
+  }
+}
+
 /** Partage un texte (reçu, code élève) : feuille de partage Android, sinon Web Share, sinon presse-papiers. */
 export async function shareText(title: string, text: string): Promise<'shared' | 'copied'> {
   if (isNative) {
@@ -37,10 +56,6 @@ export function onBackButton(handler: () => boolean): () => void {
     cancelled = true;
     remove?.();
   };
-}
-
-export async function setupStatusBar() {
-  await setStatusBarOnDark(false);
 }
 
 /** Icônes de la barre d'état claires (sur fond vert) ou foncées (sur fond clair). */

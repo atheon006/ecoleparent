@@ -31,3 +31,137 @@ body {
   padding-bottom: calc(--spacing(--value(integer)) + var(--inset-bottom));
 }
 
+
+/* ── Taille du texte (Paramètres › Apparence) ────────────────────────────────
+ * Le zoom agrandit tout l'écran d'un coup ; la hauteur est divisée d'autant pour que la
+ * barre du bas reste en bas (vérifié avec Chromium, moteur de la WebView Android). */
+#root {
+  zoom: var(--fs, 1);
+  height: calc(100dvh / var(--fs, 1));
+}
+
+/* ── Icônes deux tons et tuiles colorées (maquette validée) ─────────────────── */
+.pe-icon .pe-duo {
+  fill: var(--duo, currentColor);
+  opacity: var(--duo-op, 0.2);
+}
+
+:root {
+  --tg-bg: #e3ede7; --tg-fg: #1e4a38; --tg-duo: #93c6a9;
+  --ta-bg: #fcefc7; --ta-fg: #8a5a00; --ta-duo: #f0b429;
+  --tb-bg: #e6eefa; --tb-fg: #2557a7; --tb-duo: #9db8ea;
+  --tc-bg: #fbe4dc; --tc-fg: #b4421f; --tc-duo: #f2a386;
+  --tt-bg: #ddf1ee; --tt-fg: #1f6f66; --tt-duo: #8cd0c5;
+  --tv-bg: #ece7f8; --tv-fg: #5b3fa8; --tv-duo: #beadeb;
+  --ok: #1c7f53; --ok-soft: #dcf1e5;
+  --hero-1: #24573f; --hero-2: #163a2c;
+  --card-shadow: 0 1px 2px rgb(22 35 28 / 5%), 0 12px 26px -20px rgb(22 35 28 / 38%);
+}
+
+.tone-g { background: var(--tg-bg); color: var(--tg-fg); --duo: var(--tg-duo); --duo-op: 1; }
+.tone-a { background: var(--ta-bg); color: var(--ta-fg); --duo: var(--ta-duo); --duo-op: 1; }
+.tone-b { background: var(--tb-bg); color: var(--tb-fg); --duo: var(--tb-duo); --duo-op: 1; }
+.tone-c { background: var(--tc-bg); color: var(--tc-fg); --duo: var(--tc-duo); --duo-op: 1; }
+.tone-t { background: var(--tt-bg); color: var(--tt-fg); --duo: var(--tt-duo); --duo-op: 1; }
+.tone-v { background: var(--tv-bg); color: var(--tv-fg); --duo: var(--tv-duo); --duo-op: 1; }
+
+.pe-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 22px;
+  box-shadow: var(--card-shadow);
+}
+
+.pe-hero {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  background: radial-gradient(120% 120% at 100% 0%, #2f6b4f 0%, var(--hero-1) 45%, var(--hero-2) 100%);
+  box-shadow: 0 18px 30px -22px rgb(16 42 31 / 90%);
+}
+.pe-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgb(255 255 255 / 35%) 0.6px, transparent 0.7px);
+  background-size: 8px 8px;
+  opacity: 0.25;
+  pointer-events: none;
+}
+.pe-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.text-ok { color: var(--ok); }
+.bg-ok-soft { background: var(--ok-soft); }
+
+/* ── Thème sombre (Paramètres › Apparence) ──────────────────────────────────── */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-ground: #0e1512;
+  --color-surface: #18221d;
+  --color-muted: #1f2924;
+  --color-line: #26312b;
+  --color-line-soft: #1f2924;
+  --color-ink: #e8ede6;
+  --color-ink-2: #b9c4bd;
+  --color-ink-3: #8e9a93;
+  --color-ink-4: #7a867f;
+  --color-brand: #2c6e50;
+  --color-brand-2: #3a7d5e;
+  --color-brand-3: #24573f;
+  --color-brand-soft: #1c3027;
+  --color-brand-ink: #c9dcd1;
+  --color-chalk: #f2be45;
+  --color-danger: #c4502c;
+  --color-danger-ink: #f5a285;
+  --color-danger-text: #f3c9b9;
+  --color-danger-soft: #391f18;
+  --color-danger-line: #5a2e22;
+  --color-warn: #f2be45;
+  --color-warn-soft: #382d14;
+  --color-info: #3d6fc0;
+  --color-info-soft: #1a2740;
+  --color-field: #3a463f;
+
+  --tg-bg: #1c3026; --tg-fg: #8fd0ac; --tg-duo: #3d6b52;
+  --ta-bg: #3a2f15; --ta-fg: #f5c860; --ta-duo: #87691f;
+  --tb-bg: #1a2740; --tb-fg: #9dbdf3; --tb-duo: #34507f;
+  --tc-bg: #3a2019; --tc-fg: #f5a285; --tc-duo: #7c3e2b;
+  --tt-bg: #15302c; --tt-fg: #86d6c9; --tt-duo: #2f6a61;
+  --tv-bg: #28213d; --tv-fg: #c3b3f2; --tv-duo: #54457f;
+  --ok: #5bd08f; --ok-soft: #163024;
+  --hero-1: #1f4d38; --hero-2: #102a1f;
+  --card-shadow: 0 1px 2px rgb(0 0 0 / 35%), 0 12px 26px -20px rgb(0 0 0 / 80%);
+}
+/* En sombre, le vert, le rouge et le bleu servent de fond (texte blanc) : en texte, on les éclaircit. */
+:root[data-theme='dark'] .text-brand,
+:root[data-theme='dark'] .text-brand-2 { color: #8fd3ae; }
+:root[data-theme='dark'] .border-brand { border-color: #4f9a76; }
+:root[data-theme='dark'] .text-danger { color: #f2917a; }
+:root[data-theme='dark'] .text-info { color: #95b8f2; }
+/* Sur fond craie (jaune), le texte reste foncé. */
+:root[data-theme='dark'] .bg-chalk { --color-ink: #16231c; }
+
+/* Impression (site des parents) : seule la zone .print-area (bulletin, reçu) sort sur papier, en clair. */
+@media print {
+  :root {
+    --fs: 1;
+  }
+  #root {
+    height: auto;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+  }
+}

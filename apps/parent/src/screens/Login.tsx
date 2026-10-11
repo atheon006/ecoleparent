@@ -4,6 +4,7 @@ import { Button, ErrorNote, Field, Segmented } from '@pe/shared/ui';
 import { BookOpen, CalendarCheck, School, Wallet } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { googleSignInAvailable, isNative, nativeGoogleIdToken, setStatusBarOnDark } from '../native';
+import { applyAppearance } from '../prefs';
 
 type Mode = 'signin' | 'signup' | 'reset';
 
@@ -21,7 +22,7 @@ export function Login() {
 
   useEffect(() => {
     void setStatusBarOnDark(true);
-    return () => void setStatusBarOnDark(false);
+    return () => applyAppearance();
   }, []);
 
   async function submit(e: FormEvent) {
@@ -101,7 +102,7 @@ export function Login() {
                 block
                 loading={googleBusy}
                 onClick={() => void google()}
-                className="border-[#c4ccc6] text-ink"
+                className="border-field text-ink"
                 icon={<GoogleMark />}
               >
                 Continuer avec Google

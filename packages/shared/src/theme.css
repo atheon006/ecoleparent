@@ -26,6 +26,8 @@
   --color-warn-soft: #fdf1d6;
   --color-info: #2557a7;
   --color-info-soft: #e6eefa;
+  /* Bordure des champs de saisie. */
+  --color-field: #c4ccc6;
 
   --font-sans: 'Figtree Variable', 'Figtree', system-ui, sans-serif;
   --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', system-ui, sans-serif;
