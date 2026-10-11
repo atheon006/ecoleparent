@@ -13,9 +13,40 @@ export interface Env {
   ALLOWED_ORIGINS: string;
   /** Clé JSON du compte de service (secret : `wrangler secret put SERVICE_ACCOUNT`). */
   SERVICE_ACCOUNT: string;
+  /**
+   * Tests seulement : « 127.0.0.1:8080 » fait lire l'émulateur Firestore, et les messages sont
+   * notés dans `globalThis.__peSent` au lieu de partir vers FCM.
+   */
+  FIRESTORE_EMULATOR_HOST?: string;
 }
 
-type Kind = 'attendance' | 'payment' | 'conduct' | 'homework' | 'announcement';
+type Kind =
+  | 'attendance'
+  | 'payment'
+  | 'conduct'
+  | 'homework'
+  | 'announcement'
+  | 'grade'
+  | 'bulletin'
+  | 'permission'
+  | 'event'
+  | 'appointment'
+  | 'request';
+
+/** Catégorie de préférence du parent (Paramètres › Notifications de l'app). */
+const CATEGORY: Record<Kind, string> = {
+  attendance: 'presences',
+  payment: 'frais',
+  conduct: 'conduite',
+  homework: 'devoirs',
+  announcement: 'annonces',
+  grade: 'notes',
+  bulletin: 'notes',
+  permission: 'agenda',
+  event: 'agenda',
+  appointment: 'agenda',
+  request: 'agenda',
+};
 
 /** Un envoi : un appareil (jeton FCM) et le message qui lui est destiné. */
 interface Target {
@@ -32,6 +63,8 @@ interface Message {
   title: string;
   body: string;
   kind: Kind;
+  /** Envoyé même pendant les heures calmes (communiqué urgent). */
+  urgent?: boolean;
 }
 
 // L'offre gratuite autorise 50 requêtes sortantes par exécution : on s'arrête avant, le reste
@@ -76,7 +109,7 @@ function corsHeaders(req: Request, env: Env): HeadersInit {
 
 // ── Traitement de la boîte d'envoi ───────────────────────────────────────────
 
-async function processOutbox(env: Env) {
+export async function processOutbox(env: Env) {
   const api = new Api(env);
   const pending = await api.query({
     from: [{ collectionId: 'notifications' }],
@@ -116,64 +149,105 @@ async function processOne(api: Api, doc: FsDoc) {
   }
 }
 
+/** Sous-collection des élèves concernée par chaque type de message « par élève ». */
+const STUDENT_SUB: Partial<Record<Kind, string>> = {
+  attendance: 'attendance',
+  payment: 'payments',
+  conduct: 'conduct',
+  grade: 'grades',
+  bulletin: 'bulletins',
+  request: 'requests',
+};
+
+/** Collection de l'école pour les messages destinés à une partie de l'école. */
+const SCHOOL_SUB: Partial<Record<Kind, string>> = {
+  homework: 'homework',
+  announcement: 'announcements',
+  permission: 'permissions',
+  event: 'events',
+  appointment: 'slots',
+};
+
+const REQUEST_LABELS: Record<string, string> = {
+  attestation: 'attestation de fréquentation',
+  pickup: 'personne autorisée',
+  info: 'correction d’information',
+};
+
 /** Relit les documents visés et prépare un message par parent et par appareil. */
 async function resolve(api: Api, n: Record<string, unknown>): Promise<Target[]> {
   const schoolId = String(n.schoolId ?? '');
   const kind = n.kind as Kind;
   const paths = (Array.isArray(n.paths) ? n.paths : []).map(String).slice(0, 10);
-  if (!schoolId || !paths.length) return [];
+  if (!schoolId || !paths.length || !(kind in CATEGORY)) return [];
 
-  // Messages par élève (absence, paiement, conduite) ou pour une partie de l'école.
+  // Messages par élève, pour certains parents, ou pour une partie de l'école.
   const perStudent: Message[] = [];
-  let broadcast: { title: string; body: string; classIds: string[] } | null = null;
+  const perUid = new Map<string, Message[]>();
+  let broadcast: (Message & { classIds: string[] }) | null = null;
 
-  if (kind === 'attendance' || kind === 'payment' || kind === 'conduct') {
-    const sub = { attendance: 'attendance', payment: 'payments', conduct: 'conduct' }[kind];
+  const studentSub = STUDENT_SUB[kind];
+  const schoolSub = SCHOOL_SUB[kind];
+
+  if (studentSub) {
+    const wanted = paths
+      .map((path) => path.match(/^students\/([^/]+)\/([^/]+)\/([^/]+)$/))
+      .filter((m): m is RegExpMatchArray => !!m && m[2] === studentSub);
+    if (!wanted.length) return [];
+    const docs = await api.batchGet(wanted.map((m) => m[0]), []);
+    const byPath = new Map(docs.map((d) => [d.name.slice(api.root.length + 1), data(d)]));
     let currency = '$';
     if (kind === 'payment') {
       const school = await api.get(`schools/${schoolId}`);
       currency = String((school && data(school).currency) || '$');
     }
-    for (const path of paths) {
-      const m = path.match(/^students\/([^/]+)\/([^/]+)\/([^/]+)$/);
-      if (!m || m[2] !== sub || api.left() < 10) continue;
-      const doc = await api.get(path);
-      if (!doc) continue;
-      const d = data(doc);
-      if (d.schoolId !== schoolId) continue; // pas de cette école : ignoré
-      const studentId = m[1];
-      const name = firstName(String(d.studentName ?? ''));
-      if (kind === 'attendance') {
-        if (d.status !== 'absent' && d.status !== 'late') continue;
-        perStudent.push({
-          studentId,
-          kind,
-          title: d.status === 'absent' ? `Absence de ${name}` : `Retard de ${name}`,
-          body: String(d.reason || `Signalé par ${d.recordedByName ?? 'l’école'} lors de l'appel.`),
-        });
-      } else if (kind === 'payment') {
-        perStudent.push({ studentId, kind, title: `Paiement reçu : ${d.amount} ${currency}`, body: `${d.feeName} · reçu ${d.reference}` });
-      } else {
-        perStudent.push({ studentId, kind, title: `${d.type} · ${name}`, body: String(d.title ?? '') });
-      }
+    // Les notes ne portent pas le nom de l'élève : on le lit sur sa fiche.
+    const names = new Map<string, string>();
+    if (kind === 'grade') {
+      const students = await api.batchGet([...new Set(wanted.map((m) => `students/${m[1]}`))], ['firstName']);
+      for (const st of students) names.set(st.name.split('/').pop()!, String(data(st).firstName ?? ''));
     }
-  } else if (kind === 'homework' || kind === 'announcement') {
-    const sub = kind === 'homework' ? 'homework' : 'announcements';
+    for (const m of wanted) {
+      const d = byPath.get(m[0]);
+      if (!d || d.schoolId !== schoolId) continue; // absent ou pas de cette école : ignoré
+      const studentId = m[1];
+      const name = names.get(studentId) || firstName(String(d.studentName ?? ''));
+      const msg = studentMessage(kind, d, name, currency);
+      if (msg) perStudent.push({ studentId, kind, ...msg });
+    }
+  } else if (schoolSub) {
     const m = paths[0].match(/^schools\/([^/]+)\/([^/]+)\/([^/]+)$/);
-    if (!m || m[1] !== schoolId || m[2] !== sub) return [];
+    if (!m || m[1] !== schoolId || m[2] !== schoolSub) return [];
     const doc = await api.get(paths[0]);
     if (!doc) return [];
     const d = data(doc);
+    const classIds = (Array.isArray(d.classIds) ? d.classIds : []).map(String);
     if (kind === 'homework') {
-      broadcast = { title: `Nouveau devoir de ${d.subject}`, body: String(d.title ?? ''), classIds: [String(d.classId)] };
-    } else {
-      const title = d.category === 'Urgent' ? `Urgent : ${d.title}` : String(d.title ?? '');
-      broadcast = { title, body: String(d.content ?? '').slice(0, 180), classIds: (Array.isArray(d.classIds) ? d.classIds : []).map(String) };
+      broadcast = { studentId: '', kind, title: `Nouveau devoir de ${d.subject}`, body: String(d.title ?? ''), classIds: [String(d.classId)] };
+    } else if (kind === 'announcement') {
+      const urgent = d.category === 'Urgent';
+      broadcast = { studentId: '', kind, urgent, title: urgent ? `Urgent : ${d.title}` : String(d.title ?? ''), body: String(d.content ?? '').slice(0, 180), classIds };
+    } else if (kind === 'permission') {
+      broadcast = { studentId: '', kind, title: `Autorisation à signer : ${d.title}`, body: `Sortie le ${frDate(String(d.date))} · répondre avant le ${frDate(String(d.deadline))}`, classIds };
+    } else if (kind === 'event') {
+      const when = [frDate(String(d.date)), d.time ? `à ${d.time}` : '', d.endDate && d.endDate !== d.date ? `au ${frDate(String(d.endDate))}` : ''].filter(Boolean).join(' ');
+      broadcast = { studentId: '', kind, title: `Agenda : ${d.title}`, body: `${d.category ?? ''} · ${when}${d.place ? ` · ${d.place}` : ''}`.replace(/^ · /, ''), classIds };
+    } else if (kind === 'appointment' && (d.status === 'confirmed' || d.status === 'declined') && d.bookedBy) {
+      // Seul le parent qui a demandé le créneau est prévenu.
+      const confirmed = d.status === 'confirmed';
+      perUid.set(String(d.bookedBy), [
+        {
+          studentId: String(d.studentId ?? ''),
+          kind,
+          title: confirmed ? `Rendez-vous confirmé avec ${d.teacherName}` : `Rendez-vous décliné par ${d.teacherName}`,
+          body: `${frDate(String(d.date))} à ${d.start}${d.place ? ` · ${d.place}` : ''}${confirmed ? '' : ' · choisissez un autre créneau'}`,
+        },
+      ]);
     }
   }
 
   // Comptes parents concernés.
-  const byUid = new Map<string, Message[]>();
+  const byUid = new Map<string, Message[]>(perUid);
   if (perStudent.length) {
     for (const msg of perStudent) {
       if (api.left() < 6) break;
@@ -203,7 +277,7 @@ async function resolve(api: Api, n: Record<string, unknown>): Promise<Target[]> 
       });
       allowed = new Set(students.map((s) => s.name.split('/').pop()!));
     }
-    const msg: Message = { studentId: '', kind, title: broadcast.title, body: broadcast.body };
+    const { classIds: _c, ...msg } = broadcast;
     for (const l of links) {
       if (allowed && !allowed.has(String(l.studentId))) continue;
       byUid.set(String(l.uid), [msg]);
@@ -211,19 +285,75 @@ async function resolve(api: Api, n: Record<string, unknown>): Promise<Target[]> 
   }
   if (!byUid.size) return [];
 
-  // Appareils de chaque parent.
-  const users = await api.batchGet([...byUid.keys()].map((uid) => `users/${uid}`), ['fcmTokens']);
+  // Appareils de chaque parent, selon ses préférences (catégories coupées, heures calmes).
+  const users = await api.batchGet([...byUid.keys()].map((uid) => `users/${uid}`), ['fcmTokens', 'prefs']);
   const targets: Target[] = [];
   for (const u of users) {
     const uid = u.name.split('/').pop()!;
-    const tokens = (data(u).fcmTokens as unknown[] | undefined) ?? [];
-    for (const token of tokens) {
-      for (const msg of byUid.get(uid) ?? []) {
+    const d = data(u);
+    const prefs = (d.prefs ?? {}) as { notif?: Record<string, boolean>; quiet?: boolean; tzOffset?: number };
+    const tokens = (d.fcmTokens as unknown[] | undefined) ?? [];
+    for (const msg of byUid.get(uid) ?? []) {
+      if (prefs.notif?.[CATEGORY[msg.kind]] === false) continue;
+      if (prefs.quiet && !msg.urgent && isQuietHour(prefs.tzOffset)) continue;
+      for (const token of tokens) {
         targets.push({ t: String(token), u: uid, ti: msg.title.slice(0, 120), b: msg.body.slice(0, 240), k: msg.kind, s: msg.studentId });
       }
     }
   }
   return targets;
+}
+
+/** Texte d'un message qui concerne un élève (null : rien à envoyer). */
+function studentMessage(kind: Kind, d: Record<string, unknown>, name: string, currency: string): { title: string; body: string } | null {
+  switch (kind) {
+    case 'attendance':
+      if (d.status !== 'absent' && d.status !== 'late') return null;
+      return {
+        title: d.status === 'absent' ? `Absence de ${name}` : `Retard de ${name}`,
+        body: String(d.reason || `Signalé par ${d.recordedByName ?? 'l’école'} lors de l'appel.`),
+      };
+    case 'payment':
+      return { title: `Paiement reçu : ${d.amount} ${currency}`, body: `${d.feeName} · reçu ${d.reference}` };
+    case 'conduct':
+      return { title: `${d.type} · ${name}`, body: String(d.title ?? '') };
+    case 'grade':
+      if (d.score === null || d.score === undefined) return null;
+      return { title: `${name} : ${fmt(Number(d.score))}/${fmt(Number(d.max))} en ${d.subjectName}`, body: String(d.title ?? 'Nouvelle note') };
+    case 'bulletin':
+      return {
+        title: `Bulletin de ${name} : ${d.periodLabel}`,
+        body: `${fmt(Number(d.percent))} %${d.rank ? ` · ${d.rank === 1 ? '1re' : `${d.rank}e`} place sur ${d.classSize}` : ''}`,
+      };
+    case 'request':
+      if (d.status !== 'done' && d.status !== 'rejected') return null;
+      return {
+        title: `${d.status === 'done' ? 'Demande traitée' : 'Demande refusée'} : ${REQUEST_LABELS[String(d.type)] ?? 'demande'}`,
+        body: String(d.answer || `Pour ${name}`),
+      };
+    default:
+      return null;
+  }
+}
+
+const fmt = (n: number) => (Number.isFinite(n) ? String(Math.round(n * 10) / 10).replace('.', ',') : '—');
+
+const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+
+/** « 2026-10-17 » → « samedi 17 octobre ». */
+function frDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return iso;
+  const day = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return `${DAYS[day]} ${d === 1 ? '1er' : d} ${MONTHS[m - 1]}`;
+}
+
+/** Heures calmes : de 21 h à 6 h à l'heure du téléphone du parent (décalage en minutes). */
+export function isQuietHour(tzOffset: number | undefined, now = new Date()): boolean {
+  const offset = typeof tzOffset === 'number' && Math.abs(tzOffset) <= 14 * 60 ? tzOffset : 60; // RDC par défaut
+  const minutes = (now.getUTCHours() * 60 + now.getUTCMinutes() + offset + 24 * 60) % (24 * 60);
+  return minutes >= 21 * 60 || minutes < 6 * 60;
 }
 
 const firstName = (full: string) => full.trim().split(/\s+/)[0] || 'Votre enfant';
@@ -300,7 +430,9 @@ class Api {
 
   constructor(readonly env: Env) {
     this.root = `projects/${env.PROJECT_ID}/databases/(default)/documents`;
-    this.base = `https://firestore.googleapis.com/v1/${this.root}`;
+    this.base = env.FIRESTORE_EMULATOR_HOST
+      ? `http://${env.FIRESTORE_EMULATOR_HOST}/v1/${this.root}`
+      : `https://firestore.googleapis.com/v1/${this.root}`;
   }
 
   left() {
@@ -343,7 +475,8 @@ class Api {
     for (let i = 0; i < paths.length; i += 100) {
       const rows = await this.json<{ found?: FsDoc }[]>(`${this.base}:batchGet`, {
         method: 'POST',
-        body: JSON.stringify({ documents: paths.slice(i, i + 100).map((p) => `${this.root}/${p}`), mask: { fieldPaths: fields } }),
+        // Sans liste de champs : documents entiers.
+        body: JSON.stringify({ documents: paths.slice(i, i + 100).map((p) => `${this.root}/${p}`), ...(fields.length ? { mask: { fieldPaths: fields } } : {}) }),
       });
       out.push(...rows.filter((r) => r.found).map((r) => r.found!));
     }
@@ -365,6 +498,11 @@ class Api {
 
   /** Envoie un message FCM ; 'stale' si le jeton n'est plus valable. */
   async send(t: Target): Promise<'sent' | 'stale' | 'failed'> {
+    if (this.env.FIRESTORE_EMULATOR_HOST) {
+      const g = globalThis as { __peSent?: Target[] };
+      (g.__peSent ??= []).push(t);
+      return t.t.startsWith('perime') ? 'stale' : 'sent';
+    }
     const res = await this.call(`https://fcm.googleapis.com/v1/projects/${this.env.PROJECT_ID}/messages:send`, {
       method: 'POST',
       body: JSON.stringify({
@@ -388,6 +526,7 @@ class Api {
   }
 
   private async accessToken(): Promise<string> {
+    if (this.env.FIRESTORE_EMULATOR_HOST) return 'owner';
     if (cachedToken && cachedToken.exp > Date.now() + 120_000) return cachedToken.token;
     const sa = JSON.parse(this.env.SERVICE_ACCOUNT) as { client_email: string; private_key: string };
     const now = Math.floor(Date.now() / 1000);
