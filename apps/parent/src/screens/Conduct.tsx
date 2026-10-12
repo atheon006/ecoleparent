@@ -19,25 +19,23 @@ export function ConductScreen({ nav }: { nav: Nav }) {
   return (
     <div>
       <SubHeader title="Conduite" subtitle={`${active.student.firstName} · année ${yearOf(active)}`} onBack={nav.back} />
-      <div className="pe-hero mx-4 rounded-[26px] p-4">
+      <div className="pe-summary mx-5 mt-2 px-[18px] py-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="text-[12.5px] font-semibold text-white/75">Points de conduite</div>
-            <div className="font-display text-[44px] leading-none font-extrabold text-[#f7d27a] tabular-nums">
+            <div className="text-[13px] text-ink-3">Points de conduite</div>
+            <div className="text-[36px] leading-tight font-semibold tracking-tight tabular-nums">
               {total > 0 ? '+' : ''}
               {total}
             </div>
-            <div className="mt-1 text-xs text-white/70">
+            <div className="text-[13px] text-ink-3">
               {positives} encouragement{positives > 1 ? 's' : ''} depuis la rentrée
             </div>
           </div>
-          <span className="flex size-[58px] items-center justify-center rounded-[18px] bg-white/10 text-[#f7d27a]" style={{ '--duo': '#f7d27a', '--duo-op': 0.35 } as React.CSSProperties}>
-            <Icon name="trophy" size={32} />
-          </span>
+          <Icon name="trophy" size={30} className="text-ink-4" />
         </div>
         {weekStar && (
-          <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[12.5px] font-bold">
-            <Icon name="medal" size={18} /> Élève de la semaine !
+          <div className="mt-3 flex items-center gap-2 border-t border-line pt-3 text-sm font-semibold">
+            <Icon name="medal" size={18} className="text-brand" /> Élève de la semaine
           </div>
         )}
       </div>
@@ -58,7 +56,7 @@ export function ConductScreen({ nav }: { nav: Nav }) {
                   left={<Tile icon={p > 0 ? 'thumbs-up' : p < 0 ? 'warning-circle' : 'info'} tone={p > 0 ? 'g' : p < 0 ? 'c' : 'b'} />}
                   title={c.title}
                   sub={`${c.type} · ${formatShort(c.date)} · ${c.author}${c.comment ? ` · ${c.comment}` : ''}`}
-                  end={<span className={cx('font-display text-base font-extrabold', p > 0 ? 'text-ok' : p < 0 ? 'text-danger' : 'text-ink-3')}>{p > 0 ? `+${p}` : p}</span>}
+                  end={<span className={cx('text-base font-semibold', p > 0 ? 'text-ok' : p < 0 ? 'text-danger' : 'text-ink-3')}>{p > 0 ? `+${p}` : p}</span>}
                 />
               );
             })}

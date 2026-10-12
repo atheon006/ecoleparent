@@ -3,7 +3,7 @@ import { finishTotpEnrollment, startTotpEnrollment, useAuth } from '@pe/shared/a
 import { CodeInput } from '@pe/shared/mfa';
 import { Button, ErrorNote, Field, Loading, Segmented } from '@pe/shared/ui';
 import type { TotpSecret } from 'firebase/auth';
-import { School, ShieldCheck } from 'lucide-react';
+import { Banknote, ClipboardCheck, GraduationCap, ShieldCheck } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 
@@ -11,24 +11,36 @@ const LEGAL_URL = import.meta.env.VITE_PARENT_URL || 'https://parentecole.web.ap
 
 function Frame({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col bg-brand md:flex-row">
-      <div className="flex flex-col justify-between gap-8 p-8 text-white md:w-[44%] md:p-12">
-        <div className="flex items-center gap-3">
-          <span className="flex size-11 items-center justify-center rounded-[14px] bg-chalk text-ink">
-            <School size={24} aria-hidden="true" />
-          </span>
-          <span className="font-display text-xl font-bold">ParentEcole</span>
+    <div className="flex min-h-screen flex-col bg-surface md:flex-row">
+      <div className="flex flex-col justify-between gap-8 border-b border-line bg-ground p-8 md:w-[42%] md:border-r md:border-b-0 md:p-12">
+        <div className="text-xl font-bold tracking-tight">
+          Parent<span className="text-brand">Ecole</span>
         </div>
         <div className="flex flex-col gap-3">
-          <h1 className="font-display text-3xl leading-tight font-extrabold md:text-[40px]">Espace école</h1>
-          <p className="max-w-md text-[15px] leading-relaxed text-brand-ink">
-            Inscriptions, appel, devoirs, caisse et communiqués. Tout ce que vous saisissez ici apparaît aussitôt dans l'application des
+          <h1 className="text-3xl leading-tight font-semibold tracking-tight md:text-[38px]">Espace école</h1>
+          <p className="max-w-md text-[15px] leading-relaxed text-ink-2">
+            Inscriptions, appel, notes, caisse et communiqués. Tout ce que vous saisissez ici apparaît aussitôt dans l'application des
             parents.
           </p>
+          <ul className="mt-2 hidden flex-col gap-2.5 text-[15px] text-ink-2 md:flex">
+            {[
+              [ClipboardCheck, "L'appel en une minute, les parents prévenus"],
+              [GraduationCap, 'Notes, bulletins et horaire de chaque classe'],
+              [Banknote, 'Caisse, reçus et suivi des paiements'],
+            ].map(([Icon, text]) => {
+              const I = Icon as typeof ClipboardCheck;
+              return (
+                <li key={text as string} className="flex items-center gap-3">
+                  <I size={19} strokeWidth={1.75} className="text-ink-3" aria-hidden="true" />
+                  {text as string}
+                </li>
+              );
+            })}
+          </ul>
         </div>
-        <span className="hidden text-sm text-brand-ink md:block">Direction · Surveillance · Enseignants · Caisse</span>
+        <span className="hidden text-sm text-ink-3 md:block">Direction · Surveillance · Enseignants · Caisse</span>
       </div>
-      <div className="flex flex-1 items-start justify-center rounded-t-[28px] bg-ground p-6 md:items-center md:rounded-none md:p-12">
+      <div className="flex flex-1 items-start justify-center p-6 md:items-center md:p-12">
         <div className="w-full max-w-md">{children}</div>
       </div>
     </div>
@@ -77,7 +89,7 @@ export function Login() {
   return (
     <Frame>
       <div className="flex flex-col gap-5">
-        <Button variant="secondary" size="lg" block onClick={() => void google()} className="border-[#c4ccc6] text-ink">
+        <Button variant="secondary" size="lg" block onClick={() => void google()} className="border-field text-ink">
           <GoogleMark /> Continuer avec Google
         </Button>
         <div className="flex items-center gap-3 text-[13px] text-ink-3">
@@ -97,7 +109,7 @@ export function Login() {
               ]}
             />
           ) : (
-            <h2 className="font-display text-xl font-bold">Mot de passe oublié</h2>
+            <h2 className="text-lg font-semibold">Mot de passe oublié</h2>
           )}
           {mode === 'signup' && (
             <p className="text-sm leading-relaxed text-ink-2">
@@ -123,7 +135,7 @@ export function Login() {
           <Button type="submit" size="lg" block loading={busy}>
             {mode === 'signin' ? 'Se connecter' : mode === 'signup' ? 'Créer mon mot de passe' : 'Recevoir le lien'}
           </Button>
-          <button type="button" className="min-h-11 text-sm font-bold text-brand" onClick={() => setMode(mode === 'reset' ? 'signin' : 'reset')}>
+          <button type="button" className="min-h-11 text-sm font-semibold text-brand" onClick={() => setMode(mode === 'reset' ? 'signin' : 'reset')}>
             {mode === 'reset' ? 'Retour à la connexion' : 'Mot de passe oublié ?'}
           </button>
         </form>
@@ -133,7 +145,7 @@ export function Login() {
             <>
               {' '}
               ou l'espace parent en ligne :{' '}
-              <a className="font-bold text-brand" href={import.meta.env.VITE_PARENT_URL}>
+              <a className="font-semibold text-brand" href={import.meta.env.VITE_PARENT_URL}>
                 {import.meta.env.VITE_PARENT_URL.replace(/^https?:\/\//, '')}
               </a>
             </>
@@ -177,7 +189,7 @@ export function VerifyEmail() {
   return (
     <Frame>
       <div className="flex flex-col gap-4">
-        <h2 className="font-display text-2xl font-bold">Vérifiez votre adresse e-mail</h2>
+        <h2 className="text-xl font-semibold">Vérifiez votre adresse e-mail</h2>
         <p className="leading-relaxed text-ink-2">
           Un lien de vérification a été envoyé à <strong>{user?.email}</strong>. Ouvrez-le : cette page passera toute seule à la suite.
           Pensez à regarder dans les courriers indésirables.
@@ -218,7 +230,7 @@ export function NoAccess({ reason }: { reason: 'none' | 'inactive' | 'error' }) 
   return (
     <Frame>
       <div className="flex flex-col gap-4">
-        <h2 className="font-display text-2xl font-bold">{reason === 'inactive' ? 'Compte désactivé' : 'Accès non autorisé'}</h2>
+        <h2 className="text-xl font-semibold">{reason === 'inactive' ? 'Compte désactivé' : 'Accès non autorisé'}</h2>
         <p className="leading-relaxed text-ink-2">
           {reason === 'inactive'
             ? 'Votre accès a été désactivé par la direction de l’école.'
@@ -238,7 +250,7 @@ export function NoAccess({ reason }: { reason: 'none' | 'inactive' | 'error' }) 
 export function SetupMissing() {
   return (
     <Frame>
-      <h2 className="font-display text-2xl font-bold">Configuration manquante</h2>
+      <h2 className="text-xl font-semibold">Configuration manquante</h2>
       <p className="mt-3 leading-relaxed text-ink-2">
         Ce site n'est relié à aucune base de données. Renseignez les variables <code>VITE_FIREBASE_*</code> dans le fichier <code>.env</code> à
         la racine du projet (voir le README), puis relancez.
@@ -314,10 +326,10 @@ export function EnrollMfa() {
     <Frame>
       <form onSubmit={submit} className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
-          <span className="flex items-center gap-2 text-[13px] font-bold tracking-wider text-brand uppercase">
+          <span className="flex items-center gap-2 text-[13px] font-semibold tracking-wider text-brand uppercase">
             <ShieldCheck size={16} aria-hidden="true" /> Sécurité du compte
           </span>
-          <h2 className="font-display text-2xl font-bold">Activez la vérification en deux étapes</h2>
+          <h2 className="text-xl font-semibold">Activez la vérification en deux étapes</h2>
           <p className="text-[15px] leading-relaxed text-ink-2">
             Le personnel de l'école accède à des données sensibles. Un code à 6 chiffres, généré par une application sur votre téléphone, vous
             sera demandé à chaque connexion.
@@ -340,7 +352,7 @@ export function EnrollMfa() {
             </ol>
             {qr && <img src={qr} alt="QR code à scanner avec l'application d'authentification" className="size-48 self-center rounded-xl border border-line" />}
             <p className="text-center text-[13px] text-ink-3">
-              Pas de caméra ? Choisissez « Saisir une clé » et tapez : <span className="font-mono font-bold break-all text-ink">{key}</span>
+              Pas de caméra ? Choisissez « Saisir une clé » et tapez : <span className="font-mono font-semibold break-all text-ink">{key}</span>
             </p>
             <ol start={3} className="list-decimal pl-5 text-[15px] leading-relaxed text-ink-2">
               <li>Saisissez le code à 6 chiffres affiché par l'application :</li>
@@ -372,7 +384,7 @@ export function MfaRelogin() {
   return (
     <Frame>
       <div className="flex flex-col gap-4">
-        <h2 className="font-display text-2xl font-bold">Reconnectez-vous</h2>
+        <h2 className="text-xl font-semibold">Reconnectez-vous</h2>
         <p className="leading-relaxed text-ink-2">
           Cette session a été ouverte sans le code de votre application d'authentification. Reconnectez-vous : le code vous sera demandé.
         </p>

@@ -65,7 +65,7 @@ export function AppointmentsPage() {
 
       {requests.length > 0 && (
         <section className="mb-6 flex flex-col gap-2">
-          <h2 className="font-display text-lg font-bold">À confirmer ({requests.length})</h2>
+          <h2 className="text-base font-semibold">À confirmer ({requests.length})</h2>
           <ul className="grid gap-3 lg:grid-cols-2">
             {requests.map((s) => (
               <Card as="li" key={s.id} className="flex flex-col gap-2 border-warn/40 p-4">
@@ -76,7 +76,7 @@ export function AppointmentsPage() {
                   </span>
                   {scope === 'all' && <span className="text-sm text-ink-3">· {s.teacherName}</span>}
                 </div>
-                <span className="font-bold">
+                <span className="font-semibold">
                   {s.bookedByName} · parent de {s.studentName}
                 </span>
                 {s.note && <p className="rounded-xl bg-ground px-3 py-2 text-sm text-ink-2">« {s.note} »</p>}
@@ -104,7 +104,7 @@ export function AppointmentsPage() {
         <div className="flex flex-col gap-4">
           {dates.map((d) => (
             <section key={d} className="flex flex-col gap-2">
-              <h2 className="font-display text-base font-bold">{formatLongCap(d)}</h2>
+              <h2 className="text-base font-semibold">{formatLongCap(d)}</h2>
               <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {list
                   .filter((s) => s.date === d)
@@ -112,7 +112,7 @@ export function AppointmentsPage() {
                   .map((s) => (
                     <Card as="li" key={s.id} className="flex flex-col gap-1.5 p-3.5">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-bold">
+                        <span className="font-semibold">
                           {s.start} – {s.end}
                         </span>
                         <Badge tone={STATUS[s.status].tone}>{STATUS[s.status].label}</Badge>
@@ -225,7 +225,7 @@ function SlotsForm({ onClose }: { onClose: () => void }) {
           Créneaux : {preview.map((p) => `${p}–${addMinutes(p, minutes)}`).join(', ')}
         </p>
         <fieldset>
-          <legend className="mb-1 text-sm font-bold">Parents des classes (aucune cochée = toutes)</legend>
+          <legend className="mb-1 text-sm font-semibold">Parents des classes (aucune cochée = toutes)</legend>
           <div className="grid gap-x-4 sm:grid-cols-3">
             {choices.map((c) => (
               <Checkbox key={c.id} label={c.name} checked={classIds.includes(c.id)} onChange={(e) => setClassIds(e.target.checked ? [...classIds, c.id] : classIds.filter((x) => x !== c.id))} />

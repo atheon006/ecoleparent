@@ -39,7 +39,7 @@ export function PermissionsPage() {
                 <Badge tone="neutral">{p.classIds.length ? p.classIds.map((id) => classById.get(id)?.name ?? '?').join(', ') : 'Toute l’école'}</Badge>
                 {p.deadline >= today ? <Badge tone="warn">Réponse avant le {formatShort(p.deadline)}</Badge> : <Badge tone="neutral">Réponses closes</Badge>}
               </div>
-              <span className="text-[17px] font-bold">{p.title}</span>
+              <span className="text-[17px] font-semibold">{p.title}</span>
               {p.description && <p className="text-sm leading-relaxed whitespace-pre-line text-ink-2">{p.description}</p>}
               {p.cost ? <span className="text-sm font-semibold">Participation : {formatMoney(p.cost, currency)}</span> : null}
               <div className="flex flex-wrap gap-1 pt-1">
@@ -173,7 +173,7 @@ function PermissionForm({ slip, onClose }: { slip: PermissionSlip | null; onClos
           <Field label={`Participation (${currency})`} inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="0" />
         </div>
         <fieldset>
-          <legend className="mb-1 text-sm font-bold">Classes concernées (aucune cochée = toute l'école)</legend>
+          <legend className="mb-1 text-sm font-semibold">Classes concernées (aucune cochée = toute l'école)</legend>
           <div className="grid gap-x-4 sm:grid-cols-3">
             {classes.map((c) => (
               <Checkbox key={c.id} label={c.name} checked={classIds.includes(c.id)} onChange={(e) => setClassIds(e.target.checked ? [...classIds, c.id] : classIds.filter((x) => x !== c.id))} />

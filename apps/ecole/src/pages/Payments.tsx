@@ -50,17 +50,17 @@ export function PaymentsPage() {
         }
       />
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <label className="flex flex-col gap-1 text-sm font-bold">
+        <label className="flex flex-col gap-1 text-sm font-semibold">
           Du
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-12 rounded-xl border border-[#c4ccc6] bg-surface px-3 font-normal" />
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-12 rounded-xl border border-field bg-surface px-3 font-normal" />
         </label>
-        <label className="flex flex-col gap-1 text-sm font-bold">
+        <label className="flex flex-col gap-1 text-sm font-semibold">
           Au
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-12 rounded-xl border border-[#c4ccc6] bg-surface px-3 font-normal" />
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-12 rounded-xl border border-field bg-surface px-3 font-normal" />
         </label>
-        <label className="flex flex-col gap-1 text-sm font-bold">
+        <label className="flex flex-col gap-1 text-sm font-semibold">
           Mode
-          <select value={method} onChange={(e) => setMethod(e.target.value)} className="h-12 rounded-xl border border-[#c4ccc6] bg-surface px-3 font-normal">
+          <select value={method} onChange={(e) => setMethod(e.target.value)} className="h-12 rounded-xl border border-field bg-surface px-3 font-normal">
             <option value="">Tous</option>
             {PAYMENT_METHODS.map((m) => (
               <option key={m}>{m}</option>
@@ -89,7 +89,7 @@ export function PaymentsPage() {
                 <div className="text-xs text-ink-3">{p.className}</div>
               </td>
               <td>{p.feeName}</td>
-              <td className="font-bold whitespace-nowrap">{formatMoney(p.amount, currency)}</td>
+              <td className="font-semibold whitespace-nowrap">{formatMoney(p.amount, currency)}</td>
               <td className="whitespace-nowrap">{p.method}</td>
               <td className="font-mono text-[13px] whitespace-nowrap">{p.reference}</td>
               <td className="text-right whitespace-nowrap">

@@ -3,7 +3,7 @@ import { addFcmToken, saveDevice, saveUserProfile } from '@pe/shared/api';
 import { AuthProvider, useAuth } from '@pe/shared/auth';
 import { MfaChallenge } from '@pe/shared/mfa';
 import { getFirebase, isFirebaseConfigured } from '@pe/shared/firebase';
-import { Button, Loading, ToastProvider } from '@pe/shared/ui';
+import { Button, Loading, ToastProvider, cx } from '@pe/shared/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BottomNav, SideNav, type Badges } from './components/BottomNav';
 import { LockScreen } from './components/LockScreen';
@@ -79,7 +79,7 @@ function Locked({ uid, children }: { uid: string; children: React.ReactNode }) {
 function LoadError() {
   const { signOut } = useAuth();
   return (
-    <div className="flex h-full flex-col justify-center gap-4 bg-ground px-8 pt-safe-8 pb-safe-8">
+    <div className="flex h-full flex-col justify-center gap-4 bg-surface px-8 pt-safe-8 pb-safe-8">
       <h1 className="font-display text-2xl font-bold">Chargement impossible</h1>
       <p className="leading-relaxed text-ink-2">Vos informations n'ont pas pu être chargées. Vérifiez votre connexion internet puis réessayez.</p>
       <Button size="lg" onClick={() => window.location.reload()}>
@@ -94,8 +94,11 @@ function LoadError() {
 
 function Splash({ label = 'ParentEcole' }: { label?: string }) {
   return (
-    <div className="flex h-full items-center justify-center bg-brand text-white">
-      <Loading label={label} />
+    <div className="flex h-full flex-col items-center justify-center gap-2 bg-surface">
+      <div className="text-2xl font-bold tracking-tight">
+        Parent<span className="text-brand">Ecole</span>
+      </div>
+      <Loading label={label === 'ParentEcole' ? 'Chargement…' : label} />
     </div>
   );
 }
@@ -191,6 +194,8 @@ function Shell() {
   }
 
   const shownTab = top ? ROUTE_TAB[top.name] : tab;
+  // Écrans de menu et de réglages : listes groupées sur fond gris.
+  const grouped = top ? GROUPED.has(top.name) : tab === 'more';
   const badges: Badges = active
     ? {
         news: active.announcements.filter((a) => a.important && !active.acks.has(a.id)).length,
@@ -199,7 +204,7 @@ function Shell() {
     : {};
 
   return (
-    <div className="flex h-full flex-col bg-ground lg:flex-row">
+    <div className="flex h-full flex-col bg-surface lg:flex-row">
       <SideNav
         tab={shownTab}
         onChange={(t) => go(t)}
@@ -208,13 +213,15 @@ function Shell() {
         onNotifications={() => setStack([{ name: 'notifications' }])}
         notificationsOpen={top?.name === 'notifications'}
       />
-      <main id="main-scroll" className="min-h-0 flex-1 overflow-y-auto">
+      <main id="main-scroll" className={cx('min-h-0 flex-1 overflow-y-auto', grouped && 'bg-ground')}>
         <div className="mx-auto w-full max-w-2xl pb-8 lg:max-w-3xl lg:py-4">{top ? <Stacked route={top} nav={nav} /> : <TabRoot tab={tab} nav={nav} />}</div>
       </main>
       <BottomNav tab={shownTab} onChange={(t) => go(t)} badges={badges} />
     </div>
   );
 }
+
+const GROUPED = new Set<Route['name']>(['settings', 'settings-notifs', 'settings-security', 'settings-data', 'help', 'account']);
 
 function TabRoot({ tab, nav }: { tab: Tab; nav: Nav }) {
   switch (tab) {

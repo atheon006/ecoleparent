@@ -70,8 +70,8 @@ export function AddChild({ first, onDone, onCancel }: { first?: boolean; onDone:
       <form onSubmit={submit} className="flex flex-1 flex-col overflow-y-auto">
         <div className="flex flex-1 flex-col gap-5 px-6 pt-2 pb-6">
           <div className="flex flex-col gap-2">
-            {first && <span className="text-[13px] font-bold tracking-wider text-brand uppercase">Dernière étape</span>}
-            <h1 className="font-display text-[30px] leading-tight font-extrabold">Ajoutez votre enfant</h1>
+            {first && <span className="text-[13px] font-semibold tracking-wider text-brand uppercase">Dernière étape</span>}
+            <h1 className="text-[30px] leading-tight font-semibold">Ajoutez votre enfant</h1>
             <p className="text-[15px] leading-relaxed text-ink-2">
               Le code élève figure sur la fiche remise par l'école et sur chaque reçu de paiement.
             </p>
@@ -86,7 +86,7 @@ export function AddChild({ first, onDone, onCancel }: { first?: boolean; onDone:
               <QrCode size={22} aria-hidden="true" />
             </span>
             <span className="flex flex-col">
-              <span className="text-base font-bold">Scanner le QR code</span>
+              <span className="text-base font-semibold">Scanner le QR code</span>
               <span className="text-[13px] text-ink-3">Le plus rapide, sans rien taper</span>
             </span>
           </button>

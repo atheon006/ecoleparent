@@ -8,6 +8,7 @@ import { SubHeader } from '../components/ChildPicker';
 import { Btn, EmptyState, List, Note, Pill, Row, Section, Tile } from '../components/kit';
 import { useParentData, type Child } from '../data';
 import type { Nav } from '../nav';
+import docImg from '../assets/illustrations/document.svg';
 
 export function PermissionsScreen({ nav }: { nav: Nav }) {
   const { active } = useParentData();
@@ -22,7 +23,7 @@ export function PermissionsScreen({ nav }: { nav: Nav }) {
       <SubHeader title="Autorisations" subtitle={active.student.firstName} onBack={nav.back} />
       <Section title="À signer" count={toSign.length} />
       {toSign.length === 0 ? (
-        <EmptyState icon="signature" tone="t" title="Rien à signer">
+        <EmptyState icon="signature" image={docImg} title="Rien à signer">
           Les sorties et activités qui demandent votre accord apparaîtront ici.
         </EmptyState>
       ) : (
@@ -97,7 +98,7 @@ function SlipCard({ slip: p, child }: { slip: PermissionSlip; child: Child }) {
       <div className="flex items-start gap-3">
         <Tile icon="map-pin" tone="t" />
         <div className="min-w-0 flex-1">
-          <h3 className="text-[15px] font-extrabold">{p.title}</h3>
+          <h3 className="text-[15px] font-semibold">{p.title}</h3>
           <p className="mt-0.5 text-[13px] text-ink-3">
             {formatLongCap(p.date)}
             {p.time ? `, ${p.time}` : ''}

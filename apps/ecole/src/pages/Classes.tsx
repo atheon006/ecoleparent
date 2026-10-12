@@ -2,7 +2,7 @@ import type { ClassRoom, Subject } from '@pe/shared';
 import { deleteClass, saveClass, saveSubjects } from '@pe/shared/api';
 import { getFirebase } from '@pe/shared/firebase';
 import { Button, Card, Empty, ErrorNote, Field, IconButton, Modal, SelectField } from '@pe/shared/ui';
-import { BookMarked, LayoutGrid, Pencil, Plus, Trash2 } from 'lucide-react';
+import { BookMarked, LayoutGrid, Pencil, Plus, Trash2, ScanText } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { ConfirmAction, PageHeader, useAction } from '../components/common';
 import { useSchool } from '../school';
@@ -21,9 +21,14 @@ export function ClassesPage() {
         title="Classes"
         description="Les devoirs, l'appel, les notes et les communiqués ciblés se rattachent aux classes. Indiquez les branches de chaque classe pour les bulletins."
         actions={
-          <Button icon={<Plus size={18} aria-hidden="true" />} onClick={() => setEditing('new')}>
-            Nouvelle classe
-          </Button>
+          <>
+            <Button variant="secondary" icon={<ScanText size={17} aria-hidden="true" />} onClick={() => (window.location.hash = '/importer?type=classes')}>
+              Importer le programme
+            </Button>
+            <Button icon={<Plus size={18} aria-hidden="true" />} onClick={() => setEditing('new')}>
+              Nouvelle classe
+            </Button>
+          </>
         }
       />
       {classes.length === 0 ? (
@@ -37,8 +42,8 @@ export function ClassesPage() {
             return (
               <Card as="li" key={c.id} className="flex flex-col gap-3 p-4">
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-bold tracking-wide text-ink-3 uppercase">{c.level}</span>
-                  <span className="font-display text-lg font-bold">{c.name}</span>
+                  <span className="text-xs font-semibold text-ink-3">{c.level}</span>
+                  <span className="text-base font-semibold">{c.name}</span>
                   <span className="text-sm text-ink-2">
                     {count} élève{count > 1 ? 's' : ''}
                     {c.titulaireName ? ` · titulaire : ${c.titulaireName}` : ''}
@@ -204,7 +209,7 @@ function SubjectsForm({ cls, onClose }: { cls: ClassRoom; onClose: () => void })
         )}
         {rows.length > 0 && (
           <div className="flex flex-col gap-2">
-            <div className="hidden grid-cols-[1fr_7rem_7rem_2.75rem] gap-2 px-1 text-xs font-bold tracking-wide text-ink-3 uppercase sm:grid">
+            <div className="hidden grid-cols-[1fr_7rem_7rem_2.75rem] gap-2 px-1 text-xs font-semibold text-ink-3 sm:grid">
               <span>Branche</span>
               <span>Max période</span>
               <span>Max examen</span>
@@ -217,14 +222,14 @@ function SubjectsForm({ cls, onClose }: { cls: ClassRoom; onClose: () => void })
                   value={r.name}
                   onChange={(e) => set(i, { name: e.target.value })}
                   placeholder="Mathématiques"
-                  className="h-11 min-w-0 rounded-xl border border-[#c4ccc6] bg-surface px-3 text-[15px]"
+                  className="h-11 min-w-0 rounded-xl border border-field bg-surface px-3 text-[15px]"
                 />
                 <input
                   aria-label={`Maximum par période · ${r.name}`}
                   inputMode="decimal"
                   value={r.max}
                   onChange={(e) => set(i, { max: e.target.value.replace(',', '.') })}
-                  className="h-11 rounded-xl border border-[#c4ccc6] bg-surface px-3 text-[15px]"
+                  className="h-11 rounded-xl border border-field bg-surface px-3 text-[15px]"
                 />
                 <input
                   aria-label={`Maximum à l'examen · ${r.name}`}
@@ -232,7 +237,7 @@ function SubjectsForm({ cls, onClose }: { cls: ClassRoom; onClose: () => void })
                   value={r.examMax}
                   placeholder={r.max ? String(Number(r.max) * 2 || '') : ''}
                   onChange={(e) => set(i, { examMax: e.target.value.replace(',', '.') })}
-                  className="col-start-2 row-start-2 h-11 rounded-xl border border-[#c4ccc6] bg-surface px-3 text-[15px] sm:col-start-auto sm:row-start-auto"
+                  className="col-start-2 row-start-2 h-11 rounded-xl border border-field bg-surface px-3 text-[15px] sm:col-start-auto sm:row-start-auto"
                 />
                 <IconButton label={`Retirer ${r.name || 'la branche'}`} onClick={() => setRows((x) => x.filter((_, j) => j !== i))} className="text-danger-ink">
                   <Trash2 size={18} aria-hidden="true" />

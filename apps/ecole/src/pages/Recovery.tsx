@@ -69,7 +69,7 @@ export function RecoveryPage() {
           ]}
           className="sm:w-[480px]"
         />
-        <select aria-label="Filtrer par classe" value={classId} onChange={(e) => setClassId(e.target.value)} className="h-12 rounded-xl border border-[#c4ccc6] bg-surface px-3 sm:w-56">
+        <select aria-label="Filtrer par classe" value={classId} onChange={(e) => setClassId(e.target.value)} className="h-12 rounded-xl border border-field bg-surface px-3 sm:w-56">
           <option value="">Toutes les classes</option>
           {classes.map((c) => (
             <option key={c.id} value={c.id}>
@@ -97,14 +97,14 @@ export function RecoveryPage() {
                 <div>{a.fee.name}</div>
                 <div className="text-xs text-ink-3">{a.status.installment.name}</div>
               </td>
-              <td className="font-bold whitespace-nowrap text-danger-ink">{formatMoney(a.status.missing, currency)}</td>
+              <td className="font-semibold whitespace-nowrap text-danger-ink">{formatMoney(a.status.missing, currency)}</td>
               <td className="whitespace-nowrap">
                 {formatShort(a.status.installment.dueDate)} <Badge tone={tone(a.level)}>{stateLabel[a.status.state]}</Badge>
               </td>
               <td className="whitespace-nowrap">{formatShort(a.status.installment.cutoffDate)}</td>
               <td>
                 <div>{s.parentName}</div>
-                <a href={`tel:${s.parentPhone.replace(/\s/g, '')}`} className="text-[13px] font-bold text-brand">
+                <a href={`tel:${s.parentPhone.replace(/\s/g, '')}`} className="text-[13px] font-semibold text-brand">
                   {s.parentPhone}
                 </a>
               </td>

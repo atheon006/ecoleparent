@@ -6,6 +6,7 @@ import type { IconName } from '../components/Icon';
 import { EmptyState, Note, Tile, type Tone } from '../components/kit';
 import { useParentData, type FeedItem, type FeedKind } from '../data';
 import type { Nav } from '../nav';
+import doneImg from '../assets/illustrations/tout-est-fait.svg';
 
 const KIND: Record<FeedKind, { icon: IconName; tone: Tone }> = {
   absence: { icon: 'warning-circle', tone: 'c' },
@@ -70,13 +71,13 @@ export function Notifications({ nav }: { nav: Nav }) {
     <div>
       <SubHeader title="Nouveautés" subtitle="30 derniers jours" onBack={nav.back} />
       {feed.length === 0 ? (
-        <EmptyState icon="bell" title="Rien de nouveau">
+        <EmptyState icon="bell" image={doneImg} title="Rien de nouveau">
           Absences, notes, paiements, devoirs et communiqués apparaîtront ici.
         </EmptyState>
       ) : (
         groups.map((g) => (
           <section key={g}>
-            <h2 className="mx-5 mt-5 mb-2 font-display text-[15px] font-extrabold text-ink-2">{g}</h2>
+            <h2 className="mx-5 mt-5 mb-2 text-[15px] font-semibold text-ink-2">{g}</h2>
             <div className="pe-card mx-4 overflow-hidden [&>*+*]:border-t [&>*+*]:border-line-soft">
               {feed
                 .filter((f) => dayGroup(f.at) === g)
@@ -86,7 +87,7 @@ export function Notifications({ nav }: { nav: Nav }) {
                     <button key={f.id} type="button" onClick={() => open(f)} className={cx('flex w-full items-start gap-3 px-4 py-3 text-left', fresh && 'bg-brand-soft/40')}>
                       <Tile icon={KIND[f.kind].icon} tone={KIND[f.kind].tone} />
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[15px] leading-snug font-bold">{f.title}</span>
+                        <span className="block text-[15px] leading-snug font-semibold">{f.title}</span>
                         <span className="line-clamp-2 block text-[13px] text-ink-3">{f.body}</span>
                       </span>
                       <span className="flex shrink-0 flex-col items-end gap-1">

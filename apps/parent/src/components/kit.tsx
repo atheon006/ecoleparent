@@ -3,15 +3,20 @@ import { cx } from '@pe/shared/ui';
 import type { ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
 
-// Briques d'interface de l'app parent, d'après la maquette validée (cartes, tuiles colorées,
-// rangées, pastilles, puces, interrupteurs).
+// Briques d'interface de l'app parent, version épurée : icônes fines grises, listes à filets,
+// la couleur réservée aux états (absent, retard, paiement urgent).
 
+/** Ancienne palette de tuiles : seul « c » (alerte) garde une couleur. */
 export type Tone = 'g' | 'a' | 'b' | 'c' | 't' | 'v';
 
-export function Tile({ icon, tone, size = 42, className }: { icon: IconName; tone: Tone; size?: number; className?: string }) {
+/** Icône de début de ligne (sans fond coloré). */
+export function Tile({ icon, tone, size = 24, className }: { icon: IconName; tone?: Tone; size?: number; className?: string }) {
   return (
-    <span className={cx(`tone-${tone} flex shrink-0 items-center justify-center`, className)} style={{ width: size, height: size, borderRadius: size * 0.33 }}>
-      <Icon name={icon} size={Math.round(size * 0.54)} />
+    <span
+      className={cx('flex shrink-0 items-center justify-center', tone === 'c' ? 'text-danger' : !className?.includes('text-') && 'text-ink-3', className)}
+      style={{ width: size, height: size }}
+    >
+      <Icon name={icon} size={size >= 40 ? Math.round(size * 0.6) : 20} />
     </span>
   );
 }
@@ -42,16 +47,16 @@ export function Row({
     <>
       {left}
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-[15px] leading-snug font-bold">{title}</span>
+        <span className="text-[15px] leading-snug font-medium">{title}</span>
         {sub && <span className="mt-px text-[13px] leading-snug text-ink-3">{sub}</span>}
       </span>
       {end && <span className="shrink-0 text-right">{end}</span>}
-      {(chevron ?? !!onClick) && <Icon name="caret-right" size={18} className="text-ink-3" />}
+      {(chevron ?? !!onClick) && <Icon name="caret-right" size={18} className="text-ink-4" />}
     </>
   );
-  const cls = cx('flex w-full items-center gap-3 px-4 py-3 text-left', className);
+  const cls = cx('flex w-full items-center gap-3.5 py-3 pr-5 text-left', className);
   return onClick ? (
-    <button type="button" onClick={onClick} className={cx(cls, 'active:bg-muted/60')}>
+    <button type="button" onClick={onClick} className={cx(cls, 'active:opacity-70')}>
       {body}
     </button>
   ) : (
@@ -59,20 +64,33 @@ export function Row({
   );
 }
 
-/** Liste de rangées dans une carte (séparateurs entre les rangées). */
-export function List({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cx('pe-card mx-4 overflow-hidden [&>*+*]:border-t [&>*+*]:border-line-soft', className)}>{children}</div>;
+/**
+ * Liste de rangées séparées par un filet fin. `grouped` : bloc blanc arrondi, pour les écrans
+ * de réglages sur fond gris.
+ */
+export function List({ children, className, grouped }: { children: ReactNode; className?: string; grouped?: boolean }) {
+  return (
+    <div
+      className={cx(
+        '[&>*:not(:last-child)]:border-b [&>*:not(:last-child)]:border-line-soft',
+        grouped ? 'mx-4 overflow-hidden rounded-[14px] bg-surface pl-4' : 'pl-5',
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
 }
 
-export function Section({ title, action, onAction, count }: { title: string; action?: string; onAction?: () => void; count?: number }) {
+export function Section({ title, action, onAction, count, small }: { title: string; action?: string; onAction?: () => void; count?: number; small?: boolean }) {
   return (
-    <div className="mx-5 mt-6 mb-2.5 flex items-baseline justify-between gap-3">
-      <h2 className="font-display text-[17.5px] font-extrabold">
+    <div className={cx('flex items-baseline justify-between gap-3', small ? 'mx-8 mt-5 mb-1.5' : 'mx-5 mt-7 mb-1')}>
+      <h2 className={small ? 'text-[13px] font-semibold text-ink-3' : 'text-[17px] font-semibold'}>
         {title}
-        {count ? <span className="ml-2 align-middle text-[13px] font-bold text-ink-3">{count}</span> : null}
+        {count ? <span className="ml-1.5 font-medium text-ink-4">{count}</span> : null}
       </h2>
       {action && (
-        <button type="button" onClick={onAction} className="min-h-9 text-[13px] font-bold text-brand">
+        <button type="button" onClick={onAction} className="min-h-9 text-sm font-semibold text-brand">
           {action}
         </button>
       )}
@@ -83,23 +101,24 @@ export function Section({ title, action, onAction, count }: { title: string; act
 export type PillTone = 'ok' | 'warn' | 'bad' | 'info' | 'mute';
 
 const pillTone: Record<PillTone, string> = {
-  ok: 'bg-ok-soft text-ok',
-  warn: 'bg-warn-soft text-warn',
-  bad: 'bg-danger-soft text-danger-ink',
-  info: 'bg-info-soft text-info',
-  mute: 'bg-muted text-ink-3',
+  ok: 'font-semibold text-ok',
+  warn: 'font-semibold text-warn',
+  bad: 'font-semibold text-danger',
+  info: 'font-semibold text-info',
+  mute: 'text-ink-3',
 };
 
+/** État en texte coloré (sans pastille de fond). */
 export function Pill({ tone = 'mute', icon, children, className }: { tone?: PillTone; icon?: IconName; children: ReactNode; className?: string }) {
   return (
-    <span className={cx('inline-flex items-center gap-1 rounded-full px-2.5 py-[3px] text-[11.5px] font-bold whitespace-nowrap', pillTone[tone], className)}>
-      {icon && <Icon name={icon} size={14} />}
+    <span className={cx('inline-flex items-center gap-1 text-[13px] whitespace-nowrap', pillTone[tone], className)}>
+      {icon && <Icon name={icon} size={15} />}
       {children}
     </span>
   );
 }
 
-/** Puces de filtre défilantes (une seule active). */
+/** Filtres défilants (une seule valeur active). */
 export function Chips<T extends string>({
   value,
   options,
@@ -114,7 +133,7 @@ export function Chips<T extends string>({
   className?: string;
 }) {
   return (
-    <div role="group" aria-label={label} className={cx('scrollbar-none flex gap-2 overflow-x-auto px-4 pt-0.5 pb-1', className)}>
+    <div role="group" aria-label={label} className={cx('scrollbar-none flex gap-2 overflow-x-auto px-5 pt-3 pb-1', className)}>
       {options.map((o) => (
         <button
           key={o.value}
@@ -122,22 +141,22 @@ export function Chips<T extends string>({
           aria-pressed={o.value === value}
           onClick={() => onChange(o.value)}
           className={cx(
-            'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-semibold',
-            o.value === value ? 'border-brand bg-brand text-white' : 'border-line bg-surface text-ink-2',
+            'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[13.5px]',
+            o.value === value ? 'border-brand bg-brand-soft font-semibold text-brand' : 'border-line font-medium text-ink-2',
           )}
         >
           {o.label}
-          {o.count ? <span className="text-[11px] font-extrabold opacity-80">{o.count}</span> : null}
+          {o.count ? <span className="text-xs font-semibold opacity-75">{o.count}</span> : null}
         </button>
       ))}
     </div>
   );
 }
 
-/** Onglets segmentés (Notes · Devoirs · Présences · Horaire). */
+/** Onglets soulignés (Notes · Devoirs · Présences · Horaire). */
 export function Seg<T extends string>({ value, options, onChange, label }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string }) {
   return (
-    <div role="tablist" aria-label={label} className="mx-4 mt-0.5 mb-1.5 flex gap-0.5 rounded-[15px] bg-muted p-1">
+    <div role="tablist" aria-label={label} className="scrollbar-none flex gap-6 overflow-x-auto border-b border-line px-5">
       {options.map((o) => (
         <button
           key={o.value}
@@ -145,7 +164,7 @@ export function Seg<T extends string>({ value, options, onChange, label }: { val
           role="tab"
           aria-selected={o.value === value}
           onClick={() => onChange(o.value)}
-          className={cx('h-9 flex-1 rounded-[11px] text-[13px]', o.value === value ? 'bg-surface font-extrabold text-ink shadow-sm' : 'font-semibold text-ink-3')}
+          className={cx('-mb-px shrink-0 border-b-2 py-2.5 text-[15px]', o.value === value ? 'border-brand font-semibold text-ink' : 'border-transparent font-medium text-ink-3')}
         >
           {o.label}
         </button>
@@ -163,43 +182,40 @@ export function Switch({ checked, onChange, label, disabled }: { checked: boolea
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={cx('relative h-[30px] w-[50px] shrink-0 rounded-full transition-colors disabled:opacity-50', checked ? 'bg-[var(--ok)]' : 'bg-line')}
+      className={cx('relative h-[30px] w-[50px] shrink-0 rounded-full transition-colors disabled:opacity-50', checked ? 'bg-brand' : 'bg-line')}
     >
       <span className={cx('absolute top-[3px] left-[3px] size-6 rounded-full bg-white shadow transition-transform', checked && 'translate-x-5')} />
     </button>
   );
 }
 
-/** Pavé de date (mois, jour, jour de la semaine). */
-export function DateBox({ date, tone = 'bad' }: { date: string; tone?: 'bad' | 'ok' | 'info' | 'warn' }) {
+/** Date en vignette : jour et mois. Rouge pour un jour férié. */
+export function DateBox({ date, tone }: { date: string; tone?: 'bad' | 'ok' | 'info' | 'warn' }) {
   const d = parseISODate(date);
-  const head = { bad: 'bg-danger', ok: 'bg-[var(--ok)]', info: 'bg-info', warn: 'bg-chalk text-ink' }[tone];
   return (
-    <span className="w-[54px] shrink-0 overflow-hidden rounded-[15px] border border-line bg-surface text-center">
-      <span className={cx('block py-0.5 text-[11px] font-extrabold tracking-wider text-white uppercase', head)}>
-        {new Intl.DateTimeFormat('fr-FR', { month: 'short' }).format(d).replace('.', '')}
-      </span>
-      <span className="block font-display text-[22px] leading-tight font-extrabold">{d.getDate()}</span>
-      <span className="block pb-0.5 text-[10.5px] font-semibold text-ink-3">{new Intl.DateTimeFormat('fr-FR', { weekday: 'short' }).format(d).replace('.', '')}</span>
+    <span className="w-12 shrink-0 rounded-[10px] border border-line py-1.5 text-center">
+      <span className={cx('block text-xl leading-tight font-semibold tabular-nums', tone === 'bad' && 'text-danger')}>{d.getDate()}</span>
+      <span className="block text-xs text-ink-3">{new Intl.DateTimeFormat('fr-FR', { month: 'short' }).format(d)}</span>
     </span>
   );
 }
 
 export function Note({ icon = 'info', children }: { icon?: IconName; children: ReactNode }) {
   return (
-    <p className="mx-5 mt-3.5 flex items-start gap-2 text-[12.5px] leading-relaxed text-ink-3">
-      <Icon name={icon} size={18} className="mt-px" />
+    <p className="mx-5 mt-4 flex items-start gap-2 text-[13px] leading-relaxed text-ink-3">
+      <Icon name={icon} size={16} className="mt-0.5" />
       <span>{children}</span>
     </p>
   );
 }
 
-export function EmptyState({ icon, tone = 'a', title, children, action }: { icon: IconName; tone?: Tone; title: string; children?: ReactNode; action?: ReactNode }) {
+/** État vide : une illustration (bibliothèque unDraw) ou une icône, un titre, une phrase. */
+export function EmptyState({ icon, image, title, children, action }: { icon?: IconName; image?: string; tone?: Tone; title: string; children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center px-6 pt-7 pb-3 text-center">
-      <Tile icon={icon} tone={tone} size={52} />
-      <h3 className="mt-3 mb-1 font-display text-lg font-bold">{title}</h3>
-      {children && <p className="max-w-sm text-[13.5px] leading-relaxed text-ink-3">{children}</p>}
+    <div className="flex flex-col items-center px-8 pt-8 pb-4 text-center">
+      {image ? <img src={image} alt="" className="mb-2 h-32 w-auto" /> : icon && <Icon name={icon} size={30} className="text-ink-4" />}
+      <h3 className="mt-3 mb-1 text-base font-semibold">{title}</h3>
+      {children && <p className="max-w-sm text-sm leading-relaxed text-ink-3">{children}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
@@ -209,16 +225,16 @@ export function EmptyState({ icon, tone = 'a', title, children, action }: { icon
 export function CountBadge({ n, className }: { n: number; className?: string }) {
   if (!n) return null;
   return (
-    <span className={cx('inline-flex h-[19px] min-w-[19px] items-center justify-center rounded-full border-2 border-ground bg-danger px-1 text-[11px] font-extrabold text-white', className)}>
+    <span className={cx('inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-1 text-[11px] font-semibold text-white', className)}>
       {n > 9 ? '9+' : n}
     </span>
   );
 }
 
-/** Couleur d'un pourcentage : vert au-dessus de 70 %, ambre au-dessus de 50 %, rouge en dessous. */
-export const percentColor = (p: number) => (p >= 70 ? 'text-ok' : p >= 50 ? 'text-warn' : 'text-danger');
+/** Couleur d'un pourcentage : rouge seulement sous la moyenne, sinon couleur du texte. */
+export const percentColor = (p: number) => (p < 50 ? 'text-danger' : '');
 
-/** Bouton plein largeur ou compact, aux couleurs de la maquette. */
+/** Bouton plein largeur ou compact. */
 export function Btn({
   children,
   icon,
@@ -244,8 +260,8 @@ export function Btn({
 }) {
   const v = {
     primary: 'bg-brand text-white',
-    ghost: 'border border-line bg-surface text-ink',
-    soft: 'bg-brand-soft text-brand',
+    ghost: 'border border-field bg-surface text-ink',
+    soft: 'bg-muted text-ink',
     danger: 'bg-danger-soft text-danger-ink',
   }[variant];
   return (
@@ -254,14 +270,14 @@ export function Btn({
       onClick={onClick}
       disabled={disabled || loading}
       className={cx(
-        'inline-flex items-center justify-center gap-2 font-extrabold transition-transform active:scale-[.985] disabled:opacity-60',
-        size === 'md' ? 'h-12 rounded-[15px] px-[18px] text-[14.5px]' : 'h-9 rounded-xl px-3 text-[13px]',
+        'inline-flex items-center justify-center gap-2 font-semibold transition-opacity active:opacity-80 disabled:opacity-60',
+        size === 'md' ? 'h-12 rounded-xl px-[18px] text-[15px]' : 'h-9 rounded-[10px] px-3.5 text-sm',
         block && 'w-full',
         v,
         className,
       )}
     >
-      {loading ? <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : icon && <Icon name={icon} size={size === 'md' ? 20 : 17} />}
+      {loading ? <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : icon && <Icon name={icon} size={size === 'md' ? 19 : 16} />}
       {children}
     </button>
   );

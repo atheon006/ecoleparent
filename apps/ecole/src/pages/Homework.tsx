@@ -3,7 +3,7 @@ import { addHomework, deleteHomework, q } from '@pe/shared/api';
 import { getFirebase } from '@pe/shared/firebase';
 import { useLiveMany, useLiveQuery } from '@pe/shared/hooks';
 import { Badge, Button, Card, Empty, Field, Modal, SelectField, TextArea } from '@pe/shared/ui';
-import { BookOpen, Plus } from 'lucide-react';
+import { BookOpen, Plus, ScanText } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useAccess, useRole } from '../access';
 import { ConfirmAction, PageHeader, useAction } from '../components/common';
@@ -35,13 +35,18 @@ export function HomeworkPage() {
         title="Devoirs"
         description="Les parents voient les devoirs dans l'application et peuvent les marquer comme vus, comme la signature du journal de classe."
         actions={
-          <Button icon={<Plus size={18} aria-hidden="true" />} onClick={() => setAdding(true)} disabled={myClasses.length === 0}>
-            Publier un devoir
-          </Button>
+          <>
+            <Button variant="secondary" icon={<ScanText size={17} aria-hidden="true" />} onClick={() => (window.location.hash = '/importer?type=quiz')} disabled={myClasses.length === 0}>
+              Préparer une interrogation
+            </Button>
+            <Button icon={<Plus size={18} aria-hidden="true" />} onClick={() => setAdding(true)} disabled={myClasses.length === 0}>
+              Publier un devoir
+            </Button>
+          </>
         }
       />
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <select aria-label="Filtrer par classe" value={classId} onChange={(e) => setClassId(e.target.value)} className="h-12 rounded-xl border border-[#c4ccc6] bg-surface px-3 sm:w-64">
+        <select aria-label="Filtrer par classe" value={classId} onChange={(e) => setClassId(e.target.value)} className="h-12 rounded-xl border border-field bg-surface px-3 sm:w-64">
           <option value="">Toutes mes classes</option>
           {myClasses.map((c) => (
             <option key={c.id} value={c.id}>
@@ -72,7 +77,7 @@ export function HomeworkPage() {
                   <Badge tone="neutral">{h.className}</Badge>
                   <span className="text-[13px] text-ink-3">pour le {formatLongCap(h.dueDate)}</span>
                 </div>
-                <span className="text-[17px] font-bold">{h.title}</span>
+                <span className="text-[17px] font-semibold">{h.title}</span>
                 {h.description && <p className="text-sm leading-relaxed whitespace-pre-line text-ink-2">{h.description}</p>}
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                   <span className="text-[13px] text-ink-3">

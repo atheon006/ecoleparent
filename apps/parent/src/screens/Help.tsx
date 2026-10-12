@@ -26,11 +26,11 @@ export function Help({ nav }: { nav: Nav }) {
   return (
     <div>
       <SubHeader title="Aide et contact" onBack={nav.back} />
-      <Section title="Questions fréquentes" />
-      <div className="pe-card mx-4 overflow-hidden [&>*+*]:border-t [&>*+*]:border-line-soft">
+      <Section small title="Questions fréquentes" />
+      <div className="mx-4 overflow-hidden rounded-[14px] bg-surface [&>*+*]:border-t [&>*+*]:border-line-soft">
         {FAQ.map(([q, a]) => (
           <details key={q} className="group">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-2.5 px-4 py-3.5 font-bold [&::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2.5 px-4 py-3.5 font-semibold [&::-webkit-details-marker]:hidden">
               {q}
               <Icon name="caret-down" size={18} className="text-ink-3 transition-transform group-open:rotate-180" />
             </summary>
@@ -41,13 +41,13 @@ export function Help({ nav }: { nav: Nav }) {
 
       {school && (
         <>
-          <Section title="Contacter l'école" />
-          <List>
+          <Section small title="Contacter l'école" />
+          <List grouped>
             {school.phone && (
-              <a href={`tel:${school.phone.replace(/\s/g, '')}`} className="flex items-center gap-3 px-4 py-3">
+              <a href={`tel:${school.phone.replace(/\s/g, '')}`} className="flex items-center gap-3 py-3 pr-4">
                 <Tile icon="phone" tone="g" />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[15px] font-bold">{school.phone}</span>
+                  <span className="block text-[15px] font-semibold">{school.phone}</span>
                   <span className="block text-[13px] text-ink-3">{school.hours || 'Secrétariat'}</span>
                 </span>
                 <Pill tone="ok">Appeler</Pill>
@@ -59,19 +59,19 @@ export function Help({ nav }: { nav: Nav }) {
         </>
       )}
 
-      <Section title="Un souci avec l'application ?" />
-      <List>
-        <a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`ParentEcole ${__APP_VERSION__} : signalement`)}`} className="flex items-center gap-3 px-4 py-3">
-          <Tile icon="warning-circle" tone="c" />
+      <Section small title="Un souci avec l'application ?" />
+      <List grouped>
+        <a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`ParentEcole ${__APP_VERSION__} : signalement`)}`} className="flex items-center gap-3 py-3 pr-4">
+          <Tile icon="warning-circle" />
           <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-bold">Signaler un problème</span>
+            <span className="block text-[15px] font-semibold">Signaler un problème</span>
             <span className="block text-[13px] text-ink-3">Écrire à l'équipe ParentEcole</span>
           </span>
           <Icon name="caret-right" size={18} className="text-ink-3" />
         </a>
-        <a href="https://parentecole.web.app/confidentialite.html" target={isNative ? undefined : "_blank"} rel="noreferrer" className="flex items-center gap-3 px-4 py-3">
+        <a href="https://parentecole.web.app/confidentialite.html" target={isNative ? undefined : "_blank"} rel="noreferrer" className="flex items-center gap-3 py-3 pr-4">
           <Tile icon="shield-check" tone="g" />
-          <span className="flex-1 text-[15px] font-bold">Politique de confidentialité</span>
+          <span className="flex-1 text-[15px] font-semibold">Politique de confidentialité</span>
           <Icon name="caret-right" size={18} className="text-ink-3" />
         </a>
       </List>

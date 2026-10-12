@@ -22,11 +22,12 @@ import { accord } from '../format';
 
 const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
-const CELL: Record<Attendance['status'], string> = {
-  present: 'bg-ok-soft text-ok',
-  late: 'bg-warn-soft text-warn',
-  excused: 'bg-info-soft text-info',
-  absent: 'bg-danger-soft text-danger-ink',
+/** Couleur du point sous le jour. */
+const DOT: Record<Attendance['status'], string> = {
+  present: 'bg-ok',
+  late: 'bg-[#d18a00]',
+  excused: 'bg-info',
+  absent: 'bg-danger',
 };
 
 export function AttendanceView({ child: c }: { child: Child }) {
@@ -67,24 +68,24 @@ export function AttendanceView({ child: c }: { child: Child }) {
 
   return (
     <>
-      <div className="pe-card mx-4 mt-1.5 p-4">
-        <div className="mb-2.5 flex items-center justify-between">
-          <button type="button" onClick={() => shift(-1)} disabled={!canPrev} aria-label="Mois précédent" className="flex size-9 items-center justify-center rounded-full border border-line bg-surface disabled:opacity-35">
-            <Icon name="caret-left" size={18} />
+      <div className="px-3 pt-3">
+        <div className="mb-1 flex items-center justify-between">
+          <button type="button" onClick={() => shift(-1)} disabled={!canPrev} aria-label="Mois précédent" className="flex size-11 items-center justify-center rounded-full text-ink-2 disabled:text-ink-4/50">
+            <Icon name="caret-left" size={20} />
           </button>
           <div className="text-center">
-            <div className="font-display text-[17px] font-extrabold" aria-live="polite">
+            <div className="text-base font-semibold" aria-live="polite">
               {formatMonth(first)}
             </div>
-            <div className="text-xs text-ink-3">{rate === null ? "Pas encore d'appel ce mois-ci" : `Taux de présence : ${rate} %`}</div>
+            <div className="text-[13px] text-ink-3">{rate === null ? "Pas encore d'appel ce mois-ci" : `Présence : ${rate} %`}</div>
           </div>
-          <button type="button" onClick={() => shift(1)} disabled={!canNext} aria-label="Mois suivant" className="flex size-9 items-center justify-center rounded-full border border-line bg-surface disabled:opacity-35">
-            <Icon name="caret-right" size={18} />
+          <button type="button" onClick={() => shift(1)} disabled={!canNext} aria-label="Mois suivant" className="flex size-11 items-center justify-center rounded-full text-ink-2 disabled:text-ink-4/50">
+            <Icon name="caret-right" size={20} />
           </button>
         </div>
-        <div className="grid grid-cols-7 gap-1 text-center">
+        <div className="grid grid-cols-7 text-center">
           {WEEKDAYS.map((w, i) => (
-            <span key={i} aria-hidden="true" className="py-1 text-[11px] font-bold text-ink-3">
+            <span key={i} aria-hidden="true" className="py-1 text-xs font-semibold text-ink-4">
               {w}
             </span>
           ))}
@@ -96,29 +97,35 @@ export function AttendanceView({ child: c }: { child: Child }) {
             const off = offByDate.get(iso);
             const wd = (offset + i) % 7;
             const label = [formatLongCap(iso), rec ? ATTENDANCE_LABELS[rec.status] : null, off?.name].filter(Boolean).join(' · ');
+            const isToday = iso === today;
             return (
-              <span
-                key={iso}
-                title={label}
-                aria-label={label}
-                className={cx(
-                  'relative flex h-[38px] items-center justify-center rounded-xl text-[13px] font-bold tabular-nums',
-                  rec ? CELL[rec.status] : off ? (off.holiday ? 'tone-c' : 'bg-muted text-ink-3') : wd >= 5 ? 'font-medium text-ink-3 opacity-60' : '',
-                  iso === today && 'ring-2 ring-brand ring-inset',
-                )}
-              >
-                {Number(iso.slice(8))}
-                {eventDays.has(iso) && <span className="absolute bottom-[5px] size-[5px] rounded-full bg-chalk" />}
+              <span key={iso} title={label} aria-label={label} className="flex h-11 flex-col items-center justify-center gap-[3px]">
+                <span
+                  className={cx(
+                    'flex h-[26px] min-w-8 items-center justify-center rounded-full px-1 text-[15px] tabular-nums',
+                    isToday ? 'bg-brand font-semibold text-white' : off ? 'font-medium text-danger line-through' : wd >= 5 && !rec ? 'text-ink-4' : 'text-ink',
+                  )}
+                >
+                  {Number(iso.slice(8))}
+                </span>
+                <span
+                  className={cx(
+                    'size-[5px] rounded-full',
+                    rec ? DOT[rec.status] : eventDays.has(iso) ? 'size-[6px] border-[1.5px] border-ink-3' : '',
+                  )}
+                />
               </span>
             );
           })}
         </div>
-        <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 text-xs text-ink-2">
-          <Legend className="bg-[var(--ok)]" label={`Présent ${count('present')}`} />
-          <Legend className="bg-chalk" label={`Retard ${count('late')}`} />
+        <div className="flex flex-wrap gap-x-3.5 gap-y-1.5 px-2 pt-2.5 text-xs text-ink-2">
+          <Legend className="bg-ok" label={`Présent ${count('present')}`} />
+          <Legend className="bg-[#d18a00]" label={`Retard ${count('late')}`} />
           <Legend className="bg-info" label={`Justifiée ${count('excused')}`} />
           <Legend className="bg-danger" label={`Absent ${count('absent')}`} />
-          <Legend className="tone-c border border-danger/40" label="Férié" />
+          <span className="flex items-center gap-1.5">
+            <span className="font-semibold text-danger line-through">13</span>Pas de cours
+          </span>
         </div>
       </div>
 
@@ -165,7 +172,7 @@ export function AttendanceView({ child: c }: { child: Child }) {
 function Legend({ className, label }: { className: string; label: string }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span className={cx('size-2.5 rounded-[3px]', className)} />
+      <span className={cx('size-[7px] rounded-full', className)} />
       {label}
     </span>
   );

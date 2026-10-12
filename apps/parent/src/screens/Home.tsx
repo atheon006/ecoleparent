@@ -3,6 +3,7 @@ import {
   formatLongCap,
   formatMoney,
   formatShort,
+  formatTime,
   noSchoolReason,
   runningPercent,
   todayISO,
@@ -14,9 +15,9 @@ import { firstName, useAuth } from '@pe/shared/auth';
 import { getFirebase } from '@pe/shared/firebase';
 import { cx, useToast } from '@pe/shared/ui';
 import { useState } from 'react';
-import { Avatar, ChildChips } from '../components/ChildPicker';
-import { Icon, type IconName } from '../components/Icon';
-import { Btn, CountBadge, DateBox, List, Pill, Row, Section, Tile, percentColor, type Tone } from '../components/kit';
+import { ChildChips } from '../components/ChildPicker';
+import { Icon } from '../components/Icon';
+import { Btn, DateBox, List, Pill, Row, Section, Tile, percentColor } from '../components/kit';
 import { PushPrompt } from '../components/PushPrompt';
 import { useParentData, type Child } from '../data';
 import { accord, alertShort } from '../format';
@@ -33,25 +34,22 @@ export function Home({ nav }: { nav: Nav }) {
 
   return (
     <div>
-      <header className="flex items-center gap-2.5 px-[18px] pt-safe-5 pb-2.5">
+      <header className="flex items-center gap-2 px-5 pt-safe-6 pb-4">
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-medium text-ink-3">{formatLongCap(today)}</p>
-          <h1 className="flex items-center gap-2 font-display text-[28px] leading-[1.05] font-extrabold tracking-tight">
-            Bonjour{name ? `, ${name}` : ''}
-            <Icon name="hand-waving" size={26} className="text-chalk" />
-          </h1>
+          <p className="text-[13px] text-ink-3">{formatLongCap(today)}</p>
+          <h1 className="mt-0.5 text-2xl leading-tight font-semibold tracking-tight">Bonjour{name ? `, ${name}` : ''}</h1>
         </div>
         <button
           type="button"
           onClick={() => nav.push({ name: 'notifications' })}
           aria-label={unread ? `Nouveautés, ${unread} non lues` : 'Nouveautés'}
-          className="relative flex size-[42px] shrink-0 items-center justify-center rounded-full border border-line bg-surface lg:hidden"
+          className="relative flex size-11 shrink-0 items-center justify-center rounded-full text-ink-2 active:bg-muted lg:hidden"
         >
           <Icon name="bell" size={22} />
-          <CountBadge n={unread} className="absolute -top-1 -right-1" />
+          {unread > 0 && <span className="absolute top-2.5 right-3 size-2.5 rounded-full border-2 border-surface bg-danger" />}
         </button>
         <button type="button" onClick={() => nav.go('more')} aria-label="Mon compte et réglages" className="lg:hidden">
-          <span className="tone-a flex size-[42px] items-center justify-center rounded-full font-display text-[15px] font-extrabold">
+          <span className="flex size-9 items-center justify-center rounded-full bg-muted text-[13px] font-semibold text-ink-2">
             {nameInitials(user?.displayName || user?.email || 'P')}
           </span>
         </button>
@@ -59,49 +57,27 @@ export function Home({ nav }: { nav: Nav }) {
 
       <ChildChips nav={nav} />
 
-      <div className="flex flex-col gap-3 px-4">
+      <div className="mt-5 flex flex-col gap-3 px-5">
         <PushPrompt />
         {others.map((c) => (
           <button
             key={c.id}
             type="button"
             onClick={() => setActiveId(c.id)}
-            className="flex min-h-12 w-full items-center gap-2.5 rounded-[14px] border border-danger-line bg-danger-soft px-3 py-2.5 text-left text-danger-text"
+            className="flex min-h-12 w-full items-center gap-2.5 rounded-xl border border-danger-line px-3.5 py-2.5 text-left"
           >
             <span className="size-2 shrink-0 rounded-full bg-danger" />
             <span className="flex-1 text-sm">
-              <strong>{c.student.firstName}</strong> : {alertShort(c.finance.alerts[0], c.currency)}
+              <strong className="font-semibold">{c.student.firstName}</strong> : {alertShort(c.finance.alerts[0], c.currency)}
             </span>
-            <Icon name="caret-right" size={18} />
+            <Icon name="caret-right" size={18} className="text-ink-4" />
           </button>
         ))}
-        <Hero child={active} nav={nav} />
+        <Summary child={active} nav={nav} />
+        <TodayRow child={active} today={today} nav={nav} />
       </div>
 
-      <TodayRow child={active} today={today} nav={nav} />
       <Todo child={active} nav={nav} today={today} />
-
-      <Section title="Accès rapide" />
-      <div className="pe-card mx-4 grid grid-cols-4 gap-x-1.5 gap-y-3.5 px-2.5 py-3.5">
-        {(
-          [
-            ['Notes', 'chart-line-up', 'g', () => nav.go('school', 'notes')],
-            ['Devoirs', 'notebook', 'v', () => nav.go('school', 'devoirs')],
-            ['Présences', 'calendar-check', 't', () => nav.go('school', 'presences')],
-            ['Horaire', 'clock', 'b', () => nav.go('school', 'horaire')],
-            ['Bulletins', 'certificate', 'a', () => nav.push({ name: 'bulletins' })],
-            ['Agenda', 'calendar-blank', 'c', () => nav.push({ name: 'agenda' })],
-            ['Documents', 'folder-simple', 'b', () => nav.push({ name: 'documents' })],
-            ['Conduite', 'star', 'a', () => nav.push({ name: 'conduct' })],
-          ] as [string, IconName, Tone, () => void][]
-        ).map(([label, icon, tone, onClick]) => (
-          <button key={label} type="button" onClick={onClick} className="flex flex-col items-center gap-[7px] text-center text-[11.5px] font-semibold text-ink-2 active:scale-[.97]">
-            <Tile icon={icon} tone={tone} size={52} />
-            {label}
-          </button>
-        ))}
-      </div>
-
       <LatestGrades child={active} nav={nav} />
       <NextEvent child={active} nav={nav} today={today} />
       <LastAnnouncement child={active} nav={nav} />
@@ -109,43 +85,43 @@ export function Home({ nav }: { nav: Nav }) {
   );
 }
 
-function Hero({ child: c, nav }: { child: Child; nav: Nav }) {
+/** Synthèse de l'enfant : classe, école, moyenne, présence, reste à payer. */
+function Summary({ child: c, nav }: { child: Child; nav: Nav }) {
   const period = currentPeriod(c);
   const pct = runningPercent(yearGrades(c), period);
   const presence = monthPresence(c);
   const f = c.finance;
   const school = c.school;
   const titulaire = c.classRoom?.titulaireName;
-  const stat = (label: string, value: string, sub: string, onClick: () => void, chalk?: boolean) => (
-    <button type="button" onClick={onClick} className="min-w-0 rounded-2xl border border-white/15 bg-white/10 px-2.5 pt-2.5 pb-2 text-left">
-      <span className="block text-[11px] font-semibold text-white/70">{label}</span>
-      <span className={cx('block font-display text-[19px] leading-tight font-extrabold tabular-nums', chalk && 'text-[#f7d27a]')}>{value}</span>
-      <span className="block truncate text-[10.5px] text-white/60">{sub}</span>
+  const stat = (label: string, value: string, onClick: () => void, first?: boolean, alert?: boolean) => (
+    <button type="button" onClick={onClick} className={cx('flex min-w-0 flex-col gap-0.5 text-left', !first && 'border-l border-line pl-3.5')}>
+      <span className={cx('text-[22px] leading-tight font-semibold tracking-tight tabular-nums', alert && 'text-danger')}>{value}</span>
+      <span className="text-xs leading-snug text-ink-3">{label}</span>
     </button>
   );
   return (
-    <section className="pe-hero rounded-[26px] p-[18px]">
+    <section className="pe-summary px-[18px] pt-[18px] pb-4">
       <div className="flex items-center gap-3">
-        <span className="rounded-full ring-2 ring-white/30">
-          <Avatar child={c} size={56} />
-        </span>
-        <div className="min-w-0">
-          <div className="truncate font-display text-xl leading-tight font-extrabold">
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[17px] font-semibold">
             {c.student.firstName} {c.student.lastName}
           </div>
-          <div className="truncate text-[12.5px] text-white/75">
+          <div className="truncate text-[13px] text-ink-3">
             {c.student.className}
             {titulaire ? ` · titulaire ${titulaire}` : ''}
           </div>
         </div>
-        <span className="ml-auto flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/20 bg-white/10 font-display text-[13px] font-extrabold text-[#fcefc7]" title={school?.name}>
-          {school?.logo ? <img src={school.logo} alt="" className="size-full bg-white object-contain" /> : nameInitials(school?.name ?? 'École')}
+        <span
+          className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-line bg-surface text-xs font-bold text-brand"
+          title={school?.name}
+        >
+          {school?.logo ? <img src={school.logo} alt="" className="size-full object-contain" /> : nameInitials(school?.name ?? 'École')}
         </span>
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        {stat('Moyenne', pct === null ? '—' : `${fmtNum(pct)} %`, PERIOD_BY_ID[period].label, () => nav.go('school', 'notes'))}
-        {stat('Présence', presence === null ? '—' : `${presence} %`, 'ce mois-ci', () => nav.go('school', 'presences'))}
-        {stat('Reste à payer', formatMoney(f.remaining, c.currency), `sur ${formatMoney(f.total, c.currency)}`, () => nav.go('fees'), true)}
+      <div className="mt-4 grid grid-cols-3 border-t border-line pt-3.5">
+        {stat(`Moyenne · ${PERIOD_BY_ID[period].label}`, pct === null ? '—' : `${fmtNum(pct)} %`, () => nav.go('school', 'notes'), true)}
+        {stat('Présence · ce mois', presence === null ? '—' : `${presence} %`, () => nav.go('school', 'presences'))}
+        {stat('Reste à payer', formatMoney(f.remaining, c.currency), () => nav.go('fees'), false, f.alerts[0]?.level === 'danger')}
       </div>
     </section>
   );
@@ -156,36 +132,38 @@ function TodayRow({ child: c, today, nav }: { child: Child; today: string; nav: 
   const s = c.student;
   const record = c.attendance.find((a) => a.date === today);
   const off = noSchoolReason(today, { events: c.events, saturdayClasses: c.school?.saturdayClasses });
-  let tile: [IconName, Tone];
+  let dot: string;
   let title: string;
   let sub: string;
   if (record) {
-    const by = `Appel fait par ${record.recordedByName}`;
+    const by = `Appel de ${formatTime(record.recordedAt)} · ${record.recordedByName}`;
     switch (record.status) {
       case 'present':
-        [tile, title, sub] = [['check-circle', 'g'], `${s.firstName} est ${accord(s, 'présent', 'présente')} aujourd'hui`, by];
+        [dot, title, sub] = ['bg-ok', `${accord(s, 'Présent', 'Présente')} aujourd'hui`, by];
         break;
       case 'late':
-        [tile, title, sub] = [['clock', 'a'], `${s.firstName} est ${accord(s, 'arrivé', 'arrivée')} en retard`, record.reason || by];
+        [dot, title, sub] = ['bg-warn', `${accord(s, 'Arrivé', 'Arrivée')} en retard`, record.reason || by];
         break;
       case 'absent':
-        [tile, title, sub] = [['warning-circle', 'c'], `${s.firstName} est ${accord(s, 'absent', 'absente')} aujourd'hui`, 'Touchez pour justifier l’absence'];
+        [dot, title, sub] = ['bg-danger', `${accord(s, 'Absent', 'Absente')} aujourd'hui`, 'Touchez pour justifier l’absence'];
         break;
       default:
-        [tile, title, sub] = [['first-aid-kit', 'b'], 'Absence justifiée', by];
+        [dot, title, sub] = ['bg-info', 'Absence justifiée', by];
     }
   } else if (off) {
-    [tile, title, sub] = [['calendar-x', 'c'], 'Pas de cours aujourd’hui', off];
+    [dot, title, sub] = ['bg-ink-4', 'Pas de cours aujourd’hui', off];
   } else {
-    [tile, title, sub] = [['hourglass', 'a'], "L'appel n'est pas encore fait", 'Vous serez prévenu dès que l’école l’aura fait'];
+    [dot, title, sub] = ['border-2 border-ink-4', "L'appel n'est pas encore fait", 'Vous serez prévenu dès que l’école l’aura fait'];
   }
   return (
-    <>
-      <Section title="Aujourd'hui" />
-      <List>
-        <Row left={<Tile icon={tile[0]} tone={tile[1]} />} title={title} sub={sub} onClick={() => nav.go('school', 'presences')} />
-      </List>
-    </>
+    <button type="button" onClick={() => nav.go('school', 'presences')} className="flex w-full items-center gap-3 rounded-[14px] border border-line px-4 py-3.5 text-left">
+      <span className={cx('size-2.5 shrink-0 rounded-full', dot)} />
+      <span className="min-w-0 flex-1">
+        <span className="block text-[15px] font-medium">{title}</span>
+        <span className="block truncate text-[13px] text-ink-3">{sub}</span>
+      </span>
+      <Icon name="caret-right" size={18} className="text-ink-4" />
+    </button>
   );
 }
 
@@ -222,7 +200,7 @@ function Todo({ child: c, nav, today }: { child: Child; nav: Nav; today: string 
       <Row key={p.id} left={<Tile icon="signature" tone="t" />} title={p.title} sub={`À signer avant le ${formatShort(p.deadline)}`} end={<Pill tone="info">À signer</Pill>} onClick={() => nav.push({ name: 'permissions' })} />
     )),
     ...toConfirm.map((a) => (
-      <Row key={a.id} left={<Tile icon="megaphone" tone="c" />} title={a.title} sub="Communiqué important : confirmez la lecture" onClick={() => nav.go('news')} />
+      <Row key={a.id} left={<Tile icon="megaphone" />} title={a.title} sub="Communiqué important : confirmez la lecture" onClick={() => nav.go('news')} />
     )),
     ...toAnswer.map((e) => (
       <Row key={e.id} left={<Tile icon="handshake" tone="g" />} title={e.title} sub={`${formatShort(e.date)}${e.time ? ` à ${e.time}` : ''} · serez-vous là ?`} onClick={() => nav.push({ name: 'meetings' })} />
@@ -254,7 +232,7 @@ function LatestGrades({ child: c, nav }: { child: Child; nav: Nav }) {
               title={g.subjectName}
               sub={`${g.title} · ${formatShort(g.date)}`}
               end={
-                <span className={cx('font-display text-base font-extrabold tabular-nums', percentColor(pct))}>
+                <span className={cx('text-base font-semibold tabular-nums', percentColor(pct))}>
                   {fmtNum(g.score as number)}/{fmtNum(g.max)}
                 </span>
               }
@@ -290,7 +268,7 @@ export function RsvpButtons({ child: c, event: e }: { child: Child; event: Schoo
         <Pill tone={answer === 'yes' ? 'ok' : 'mute'} icon={answer === 'yes' ? 'check' : 'x'}>
           {answer === 'yes' ? 'Vous participez' : 'Absence signalée'}
         </Pill>
-        <button type="button" onClick={() => void send(answer === 'yes' ? 'no' : 'yes')} className="text-[12.5px] font-bold text-ink-3">
+        <button type="button" onClick={() => void send(answer === 'yes' ? 'no' : 'yes')} className="text-[12.5px] font-semibold text-ink-3">
           Changer
         </button>
       </span>
@@ -317,7 +295,7 @@ function NextEvent({ child: c, nav, today }: { child: Child; nav: Nav; today: st
       <div className="pe-card mx-4 flex items-center gap-3.5 p-4">
         <DateBox date={next.date} tone={next.kind === 'holiday' ? 'bad' : e?.category === 'Réunion' ? 'ok' : e?.category === 'Examen' ? 'info' : 'warn'} />
         <div className="min-w-0 flex-1">
-          <div className="font-extrabold">{next.kind === 'event' ? next.event.title : next.name}</div>
+          <div className="font-semibold">{next.kind === 'event' ? next.event.title : next.name}</div>
           <div className="text-[13px] text-ink-3">
             {e ? [e.time, e.place, e.endDate && e.endDate !== e.date ? `jusqu'au ${formatShort(e.endDate)}` : null].filter(Boolean).join(' · ') || e.category : 'Jour férié · pas de cours'}
           </div>
@@ -341,7 +319,7 @@ function LastAnnouncement({ child: c, nav }: { child: Child; nav: Nav }) {
       <button type="button" onClick={() => nav.go('news')} className="pe-card mx-4 flex w-[calc(100%-2rem)] items-start gap-3 p-4 text-left">
         <Tile icon="megaphone" tone="a" />
         <span className="min-w-0">
-          <span className="block font-extrabold">{last.title}</span>
+          <span className="block font-semibold">{last.title}</span>
           <span className="mt-0.5 line-clamp-2 block text-[13px] text-ink-3">{last.content}</span>
         </span>
       </button>

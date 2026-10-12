@@ -45,14 +45,14 @@ export function ConductPage() {
         }
       />
       {honor.length > 0 && (
-        <section className="mb-5 rounded-[20px] border border-line bg-surface p-4">
-          <h2 className="mb-2 flex items-center gap-2 font-display text-base font-bold">
-            <Trophy size={18} className="text-chalk" aria-hidden="true" /> Tableau d'honneur du mois
+        <section className="mb-5 rounded-[14px] border border-line bg-surface p-4">
+          <h2 className="mb-2 flex items-center gap-2 text-base font-semibold">
+            <Trophy size={18} className="text-ink-3" aria-hidden="true" /> Tableau d'honneur du mois
           </h2>
           <ol className="flex flex-wrap gap-2">
             {honor.map((t, i) => (
               <li key={t.name + i} className="flex items-center gap-2 rounded-full bg-brand-soft px-3 py-1.5 text-sm">
-                <strong>{i + 1}.</strong> {t.name} <span className="font-bold text-brand">+{t.points}</span>
+                <strong>{i + 1}.</strong> {t.name} <span className="font-semibold text-brand">+{t.points}</span>
               </li>
             ))}
           </ol>
@@ -73,7 +73,7 @@ export function ConductPage() {
                 <div className="font-semibold">{c.title}</div>
                 {c.comment && <div className="text-[13px] text-ink-3">{c.comment}</div>}
               </td>
-              <td className={pointsOf(c) > 0 ? 'font-bold text-brand' : pointsOf(c) < 0 ? 'font-bold text-danger-ink' : 'text-ink-3'}>
+              <td className={pointsOf(c) > 0 ? 'font-semibold text-brand' : pointsOf(c) < 0 ? 'font-semibold text-danger-ink' : 'text-ink-3'}>
                 {pointsOf(c) > 0 ? `+${pointsOf(c)}` : pointsOf(c)}
               </td>
               <td className="text-[13px]">{c.author}</td>
@@ -135,7 +135,7 @@ function ConductForm({ onClose }: { onClose: () => void }) {
       <form onSubmit={submit} className="flex flex-col gap-4">
         {student ? (
           <div className="flex items-center justify-between rounded-xl bg-brand-soft px-3.5 py-2.5">
-            <span className="font-bold">
+            <span className="font-semibold">
               {fullName(student)} · {student.className}
             </span>
             <Button size="sm" variant="ghost" onClick={() => setStudent(null)}>
@@ -144,7 +144,7 @@ function ConductForm({ onClose }: { onClose: () => void }) {
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-bold">Élève</span>
+            <span className="text-sm font-semibold">Élève</span>
             <SearchBox value={search} onChange={setSearch} placeholder="Tapez au moins 2 lettres du nom" />
             <ul className="flex flex-col gap-1">
               {results.map((s) => (

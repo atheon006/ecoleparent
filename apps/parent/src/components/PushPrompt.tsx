@@ -24,9 +24,7 @@ export function PushPrompt() {
   if (state !== 'default' || hidden) return null;
   return (
     <Card className="flex items-start gap-3 p-4" as="div">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand">
-        <BellRing size={20} aria-hidden="true" />
-      </span>
+      <BellRing size={20} className="mt-0.5 shrink-0 text-ink-3" aria-hidden="true" />
       <div className="flex flex-1 flex-col gap-2.5">
         <div className="flex flex-col gap-0.5">
           <span className="text-[15px] font-bold">Être prévenu tout de suite</span>
@@ -85,7 +83,7 @@ export function PushSettings() {
           : 'Recevez une alerte dès qu’une absence, un paiement ou un communiqué est enregistré.';
   return (
     <section className="flex flex-col gap-2.5">
-      <h2 className="font-display text-lg font-bold">Sur cet appareil</h2>
+      <h2 className="text-lg font-bold">Sur cet appareil</h2>
       <Card className="flex flex-col gap-3 p-4" as="div">
         <p className="text-[14px] leading-relaxed text-ink-2">{text}</p>
         {state === 'default' && (

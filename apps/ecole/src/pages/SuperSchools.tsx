@@ -47,7 +47,7 @@ export function SuperSchools({ onOpen }: { onOpen: (id: string) => void }) {
             <Card as="li" key={s.id} className="flex flex-col gap-3 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-col gap-0.5">
-                  <span className="font-display text-lg font-bold">{s.name}</span>
+                  <span className="text-base font-semibold">{s.name}</span>
                   <span className="text-sm text-ink-3">{s.address}</span>
                   <span className="text-sm text-ink-2">Directeur : {s.adminEmail}</span>
                   <span className="text-xs text-ink-3">
@@ -105,7 +105,7 @@ function CreateSchool({ open, onClose }: { open: boolean; onClose: () => void })
           </SelectField>
         </div>
         <div className="mt-2 border-t border-line-soft pt-4">
-          <h3 className="mb-3 font-display text-base font-bold">Directeur</h3>
+          <h3 className="mb-3 text-base font-semibold">Directeur</h3>
           <div className="flex flex-col gap-4">
             <Field label="Nom du directeur" value={form.adminName} onChange={set('adminName')} required />
             <Field

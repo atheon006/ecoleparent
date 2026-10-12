@@ -88,14 +88,14 @@ export function SettingsPage() {
       <PageHeader title="Paramètres de l'école" description="Ces informations apparaissent sur les reçus, les bulletins, les attestations et dans l'application des parents." />
       <form onSubmit={submit} className="flex max-w-3xl flex-col gap-4">
         <Card className="flex flex-col gap-4 p-5">
-          <h2 className="font-display text-lg font-bold">Identité</h2>
+          <h2 className="text-base font-semibold">Identité</h2>
           <div className="flex flex-wrap items-center gap-4">
             <span className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-line bg-ground">
               {logo ? <img src={logo} alt="Logo de l'école" className="size-full object-contain" /> : <School size={32} className="text-ink-3" aria-hidden="true" />}
             </span>
             <div className="flex flex-col gap-2">
               <div className="flex flex-wrap gap-2">
-                <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-brand bg-surface px-4 text-[15px] font-bold text-brand hover:bg-brand-soft">
+                <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-brand bg-surface px-4 text-[15px] font-semibold text-brand hover:bg-brand-soft">
                   <ImageUp size={18} aria-hidden="true" /> {logo ? 'Changer le logo' : 'Ajouter le logo'}
                   <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => void pickLogo(e)} className="sr-only" />
                 </label>
@@ -120,7 +120,7 @@ export function SettingsPage() {
         </Card>
 
         <Card className="flex flex-col gap-4 p-5">
-          <h2 className="font-display text-lg font-bold">Contact</h2>
+          <h2 className="text-base font-semibold">Contact</h2>
           <Field label="Adresse" value={address} onChange={(e) => setAddress(e.target.value)} />
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Téléphone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} hint="Les parents peuvent appeler ce numéro depuis l'application." />
@@ -130,7 +130,7 @@ export function SettingsPage() {
         </Card>
 
         <Card className="flex flex-col gap-4 p-5">
-          <h2 className="font-display text-lg font-bold">Année scolaire</h2>
+          <h2 className="text-base font-semibold">Année scolaire</h2>
           <SelectField label="Année en cours" value={year} onChange={(e) => setYear(e.target.value)} hint="Les notes et bulletins sont rangés par année scolaire." wrapperClassName="sm:max-w-xs">
             {years.map((y) => (
               <option key={y}>{y}</option>

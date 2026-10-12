@@ -26,6 +26,9 @@ export const q = {
     query(refs.group(db, 'payments'), where('schoolId', '==', schoolId), orderBy('date', 'desc'), limit(max)),
   schoolAttendanceOn: (db: Firestore, schoolId: string, date: string) =>
     query(refs.group(db, 'attendance'), where('schoolId', '==', schoolId), where('date', '==', date)),
+  /** Absences de l'école depuis une date (graphique du tableau de bord). */
+  schoolAbsencesSince: (db: Firestore, schoolId: string, from: string) =>
+    query(refs.group(db, 'attendance'), where('schoolId', '==', schoolId), where('status', '==', 'absent'), where('date', '>=', from)),
   pendingJustifications: (db: Firestore, schoolId: string) =>
     query(refs.group(db, 'attendance'), where('schoolId', '==', schoolId), where('justificationStatus', '==', 'pending')),
   schoolConduct: (db: Firestore, schoolId: string, max = 200) =>

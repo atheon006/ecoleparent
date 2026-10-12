@@ -44,7 +44,7 @@ export function AnnouncementsPage() {
                   {formatShort(a.publishedAt.slice(0, 10))} · {a.author}
                 </span>
               </div>
-              <span className="font-display text-lg font-bold">{a.title}</span>
+              <span className="text-base font-semibold">{a.title}</span>
               <p className="text-[15px] leading-relaxed whitespace-pre-line text-ink-2">{a.content}</p>
               <div className="flex flex-wrap items-center gap-1">
                 {a.important && (
@@ -112,7 +112,7 @@ function AnnouncementForm({ onClose }: { onClose: () => void }) {
         <Field label="Titre" value={title} onChange={(e) => setTitle(e.target.value)} required />
         <TextArea label="Message" rows={6} value={content} onChange={(e) => setContent(e.target.value)} required />
         <fieldset>
-          <legend className="mb-1 text-sm font-bold">Classes concernées (aucune cochée = toute l'école)</legend>
+          <legend className="mb-1 text-sm font-semibold">Classes concernées (aucune cochée = toute l'école)</legend>
           <div className="grid gap-x-4 sm:grid-cols-3">
             {classes.map((c) => (
               <Checkbox key={c.id} label={c.name} checked={classIds.includes(c.id)} onChange={(e) => setClassIds(e.target.checked ? [...classIds, c.id] : classIds.filter((x) => x !== c.id))} />

@@ -39,7 +39,7 @@ export function Account({ nav }: { nav: Nav }) {
     <div>
       <SubHeader title="Mon compte" onBack={nav.back} />
       <div className="flex justify-center pt-1 pb-3">
-        <span className="tone-a flex size-[84px] items-center justify-center rounded-full font-display text-[28px] font-extrabold">{nameInitials(name || user?.email || 'P')}</span>
+        <span className="tone-a flex size-[84px] items-center justify-center rounded-full text-[28px] font-semibold">{nameInitials(name || user?.email || 'P')}</span>
       </div>
       <form onSubmit={save} className="flex flex-col gap-3.5 px-[18px]">
         {error && <ErrorNote>{error}</ErrorNote>}
@@ -49,8 +49,8 @@ export function Account({ nav }: { nav: Nav }) {
           Enregistrer
         </Btn>
       </form>
-      <Section title="Connexion" />
-      <List>
+      <Section small title="Connexion" />
+      <List grouped>
         {usesGoogle && <Row left={<Tile icon="google-logo" tone="b" />} title="Compte Google" sub="Vous vous connectez avec Google" />}
         {usesPassword && (
           <Row

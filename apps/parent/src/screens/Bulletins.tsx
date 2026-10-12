@@ -96,7 +96,7 @@ export function BulletinScreen({ nav, id }: { nav: Nav; id: string }) {
           <div className="flex items-center gap-3">
             {school?.logo ? <img src={school.logo} alt="" className="size-[42px] rounded-xl object-contain" /> : <Tile icon="certificate" tone="g" />}
             <div className="min-w-0">
-              <div className="font-extrabold">
+              <div className="font-semibold">
                 {b.studentName} · {b.periodLabel}
               </div>
               <div className="text-[12.5px] text-ink-3">
@@ -117,9 +117,9 @@ export function BulletinScreen({ nav, id }: { nav: Nav; id: string }) {
           <table className="w-full border-collapse text-[13px] tabular-nums">
             <thead>
               <tr className="border-b border-line text-left text-[11px] tracking-wider text-ink-3 uppercase">
-                <th className="py-2 font-bold">Branche</th>
-                <th className="py-2 text-right font-bold">Max.</th>
-                <th className="py-2 text-right font-bold">Points</th>
+                <th className="py-2 font-semibold">Branche</th>
+                <th className="py-2 text-right font-semibold">Max.</th>
+                <th className="py-2 text-right font-semibold">Points</th>
               </tr>
             </thead>
             <tbody>
@@ -127,12 +127,12 @@ export function BulletinScreen({ nav, id }: { nav: Nav; id: string }) {
                 <tr key={l.subjectId} className="border-b border-line-soft">
                   <td className="py-2">{l.subject}</td>
                   <td className="py-2 text-right text-ink-3">{fmtNum(l.max)}</td>
-                  <td className={cx('py-2 text-right font-bold', l.points !== null && l.points < l.max / 2 && 'text-danger')}>{l.points === null ? '—' : fmtNum(l.points)}</td>
+                  <td className={cx('py-2 text-right font-semibold', l.points !== null && l.points < l.max / 2 && 'text-danger')}>{l.points === null ? '—' : fmtNum(l.points)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr className="font-extrabold">
+              <tr className="font-semibold">
                 <td className="pt-3">Total</td>
                 <td className="pt-3 text-right">{fmtNum(b.totalMax)}</td>
                 <td className="pt-3 text-right">{fmtNum(b.totalPoints)}</td>
@@ -169,7 +169,7 @@ export function BulletinScreen({ nav, id }: { nav: Nav; id: string }) {
 function Stat({ value, label, className }: { value: string; label: string; className?: string }) {
   return (
     <div>
-      <div className={cx('font-display text-2xl font-extrabold tabular-nums', className)}>{value}</div>
+      <div className={cx('text-2xl font-semibold tabular-nums', className)}>{value}</div>
       <div className="text-[11.5px] text-ink-3">{label}</div>
     </div>
   );

@@ -32,20 +32,20 @@ export function SchoolInfo({ nav }: { nav: Nav }) {
     <div>
       <SubHeader title="L'école" onBack={nav.back} />
       <div className="flex flex-col items-center px-4 pt-1 pb-3 text-center">
-        <span className="flex size-[76px] items-center justify-center overflow-hidden rounded-[22px] bg-brand-soft font-display text-[26px] font-extrabold text-brand">
+        <span className="flex size-[76px] items-center justify-center overflow-hidden rounded-[22px] bg-brand-soft text-[26px] font-semibold text-brand">
           {s.logo ? <img src={s.logo} alt={`Logo de ${s.name}`} className="size-full bg-white object-contain" /> : nameInitials(s.name)}
         </span>
-        <div className="mt-2 font-display text-[21px] font-extrabold">{s.name}</div>
+        <div className="mt-2 text-[21px] font-semibold">{s.name}</div>
         {s.directorName && <div className="text-ink-3">Chef d'établissement : {s.directorName}</div>}
       </div>
       <List>
-        {s.address && <Row left={<Tile icon="map-pin" tone="c" />} title="Adresse" sub={s.address} />}
+        {s.address && <Row left={<Tile icon="map-pin" />} title="Adresse" sub={s.address} />}
         {s.hours && <Row left={<Tile icon="clock" tone="b" />} title="Horaires du secrétariat" sub={s.hours} />}
         {s.phone && (
           <a href={`tel:${tel}`} className="flex items-center gap-3 px-4 py-3">
             <Tile icon="phone" tone="g" />
             <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-bold">Téléphone</span>
+              <span className="block text-[15px] font-semibold">Téléphone</span>
               <span className="block text-[13px] text-ink-3">{s.phone}</span>
             </span>
             <Pill tone="ok">Appeler</Pill>

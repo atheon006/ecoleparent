@@ -39,7 +39,7 @@ export function ChildProfile({ nav }: { nav: Nav }) {
       <SubHeader title="Profil de l'enfant" onBack={nav.back} />
       <div className="flex flex-col items-center px-4 pt-1 pb-2 text-center">
         <Avatar child={active} size={92} />
-        <div className="mt-2 font-display text-[22px] font-extrabold">
+        <div className="mt-2 text-[22px] font-semibold">
           {s.firstName} {s.lastName}
         </div>
         <div className="text-ink-3">
@@ -61,10 +61,10 @@ export function ChildProfile({ nav }: { nav: Nav }) {
 
       <Section title="Santé" />
       <List>
-        <Row left={<Tile icon="drop" tone="c" />} title="Groupe sanguin" sub={s.bloodType || 'Non renseigné'} />
+        <Row left={<Tile icon="drop" />} title="Groupe sanguin" sub={s.bloodType || 'Non renseigné'} />
         <Row left={<Tile icon="warning-circle" tone="a" />} title="Allergies" sub={s.allergies || 'Aucune signalée'} />
         <Row left={<Tile icon="first-aid-kit" tone="t" />} title="En cas d'urgence" sub={s.emergencyContact || `Appeler ${s.parentName}`} />
-        {s.medicalNotes && <Row left={<Tile icon="heartbeat" tone="c" />} title="Remarques médicales" sub={s.medicalNotes} />}
+        {s.medicalNotes && <Row left={<Tile icon="heartbeat" />} title="Remarques médicales" sub={s.medicalNotes} />}
       </List>
 
       <Section title="Personnes autorisées à le récupérer" />
@@ -72,7 +72,7 @@ export function ChildProfile({ nav }: { nav: Nav }) {
         {(s.pickups ?? []).map((p, i) => (
           <Row
             key={i}
-            left={<span className="tone-a flex size-[42px] shrink-0 items-center justify-center rounded-full font-display text-sm font-extrabold">{nameInitials(p.name)}</span>}
+            left={<span className="tone-a flex size-[42px] shrink-0 items-center justify-center rounded-full text-sm font-semibold">{nameInitials(p.name)}</span>}
             title={p.name}
             sub={`${p.relation} · ${p.phone}`}
           />
@@ -91,7 +91,7 @@ export function ChildProfile({ nav }: { nav: Nav }) {
                 title={REQUEST_TYPE_LABELS[r.type]}
                 sub={`Envoyée le ${formatShort(r.createdAt.slice(0, 10))}${r.pickup ? ` · ${r.pickup.name}` : ''}`}
                 end={
-                  <button type="button" onClick={() => void cancelRequest(getFirebase().db, r).catch((e) => toast(errorMessage(e), 'error'))} className="text-[12.5px] font-bold text-ink-3">
+                  <button type="button" onClick={() => void cancelRequest(getFirebase().db, r).catch((e) => toast(errorMessage(e), 'error'))} className="text-[12.5px] font-semibold text-ink-3">
                     Annuler
                   </button>
                 }

@@ -24,16 +24,16 @@ type ButtonSize = 'sm' | 'md' | 'lg';
 
 const variants: Record<ButtonVariant, string> = {
   primary: 'bg-brand text-white hover:bg-brand-3 disabled:bg-brand/60',
-  secondary: 'bg-surface text-brand border border-brand hover:bg-brand-soft',
-  ghost: 'bg-transparent text-brand hover:bg-brand-soft',
+  secondary: 'bg-surface text-ink border border-field hover:bg-muted',
+  ghost: 'bg-transparent text-brand hover:bg-muted',
   danger: 'bg-danger text-white hover:bg-danger-ink',
   chalk: 'bg-chalk text-ink hover:brightness-95',
 };
 
 const sizes: Record<ButtonSize, string> = {
   sm: 'min-h-9 px-3 text-sm rounded-lg gap-1.5',
-  md: 'min-h-11 px-4 text-[15px] rounded-xl gap-2',
-  lg: 'min-h-14 px-5 text-base rounded-2xl gap-2.5',
+  md: 'min-h-11 px-4 text-[15px] rounded-[10px] gap-2',
+  lg: 'min-h-12 px-5 text-base rounded-xl gap-2.5',
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -51,7 +51,7 @@ export function Button({ variant = 'primary', size = 'md', loading, icon, block,
       {...rest}
       disabled={disabled || loading}
       className={cx(
-        'inline-flex items-center justify-center font-bold transition-colors select-none',
+        'inline-flex items-center justify-center font-semibold transition-colors select-none',
         variants[variant],
         sizes[size],
         block && 'w-full',
@@ -101,7 +101,7 @@ interface FieldShellProps {
 function FieldShell({ label, hint, error, id, children, className }: FieldShellProps) {
   return (
     <div className={cx('flex flex-col gap-1.5', className)}>
-      <label htmlFor={id} className="text-sm font-bold text-ink">
+      <label htmlFor={id} className="text-[13px] font-semibold text-ink-2">
         {label}
       </label>
       {children}
@@ -115,7 +115,7 @@ function FieldShell({ label, hint, error, id, children, className }: FieldShellP
 }
 
 const inputClass =
-  'w-full rounded-xl border border-field bg-surface px-3.5 text-[16px] text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:bg-muted';
+  'w-full rounded-[10px] border border-field bg-surface px-3.5 text-[16px] text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15 disabled:bg-muted';
 
 type FieldBase = { label: string; hint?: ReactNode; error?: string | null; wrapperClassName?: string };
 
@@ -156,7 +156,7 @@ export function Checkbox({ label, hint, className, ...rest }: { label: ReactNode
     <label className={cx('flex min-h-11 cursor-pointer items-start gap-3 py-1', className)}>
       <input type="checkbox" {...rest} className="mt-0.5 size-5 shrink-0 accent-brand" />
       <span className="flex flex-col">
-        <span className="text-[15px] font-semibold">{label}</span>
+        <span className="text-[15px] font-medium">{label}</span>
         {hint && <span className="text-[13px] text-ink-3">{hint}</span>}
       </span>
     </label>
@@ -178,21 +178,21 @@ const tones: Record<Tone, string> = {
 
 export function Badge({ tone = 'neutral', children, className }: { tone?: Tone; children: ReactNode; className?: string }) {
   return (
-    <span className={cx('inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-bold whitespace-nowrap', tones[tone], className)}>
+    <span className={cx('inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold whitespace-nowrap', tones[tone], className)}>
       {children}
     </span>
   );
 }
 
 export function Card({ children, className, as: As = 'section' }: { children: ReactNode; className?: string; as?: 'section' | 'div' | 'article' | 'li' }) {
-  return <As className={cx('rounded-[20px] border border-line bg-surface', className)}>{children}</As>;
+  return <As className={cx('rounded-[14px] border border-line bg-surface', className)}>{children}</As>;
 }
 
 export function Empty({ icon, title, children, action }: { icon?: ReactNode; title: string; children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-[20px] border border-dashed border-field px-6 py-10 text-center">
-      {icon && <div className="flex size-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">{icon}</div>}
-      <p className="font-display text-lg font-bold">{title}</p>
+    <div className="flex flex-col items-center gap-2.5 rounded-[14px] border border-line px-6 py-10 text-center">
+      {icon && <div className="flex size-10 items-center justify-center text-ink-3">{icon}</div>}
+      <p className="text-base font-semibold">{title}</p>
       {children && <div className="max-w-sm text-[14px] leading-relaxed text-ink-3">{children}</div>}
       {action}
     </div>
@@ -201,7 +201,7 @@ export function Empty({ icon, title, children, action }: { icon?: ReactNode; tit
 
 export function ErrorNote({ children }: { children: ReactNode }) {
   return (
-    <div role="alert" className="rounded-xl border border-danger-line bg-danger-soft px-3.5 py-3 text-[14px] font-medium leading-snug text-danger-text">
+    <div role="alert" className="rounded-[10px] border border-danger-line bg-danger-soft px-3.5 py-3 text-[14px] font-medium leading-snug text-danger-text">
       {children}
     </div>
   );
@@ -211,7 +211,7 @@ export function Loading({ label = 'Chargement…' }: { label?: string }) {
   return (
     <div className="flex items-center justify-center gap-3 py-16 text-ink-3" role="status">
       <Spinner />
-      <span className="text-sm font-semibold">{label}</span>
+      <span className="text-sm font-medium">{label}</span>
     </div>
   );
 }
@@ -241,7 +241,7 @@ export function Segmented<T extends string>({
   className?: string;
 }) {
   return (
-    <div role="tablist" aria-label={label} className={cx('grid gap-1 rounded-[14px] bg-muted p-1', className)} style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+    <div role="tablist" aria-label={label} className={cx('grid gap-1 rounded-xl bg-muted p-1', className)} style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
       {options.map((o) => (
         <button
           key={o.value}
@@ -250,8 +250,8 @@ export function Segmented<T extends string>({
           aria-selected={o.value === value}
           onClick={() => onChange(o.value)}
           className={cx(
-            'flex min-h-11 items-center justify-center gap-2 rounded-[11px] px-2 text-[14px] transition',
-            o.value === value ? 'bg-surface font-bold text-ink shadow-sm' : 'font-semibold text-ink-2 hover:text-ink',
+            'flex min-h-10 items-center justify-center gap-2 rounded-[9px] px-2 text-[14px] transition',
+            o.value === value ? 'bg-surface font-semibold text-ink shadow-[0_1px_2px_rgb(17_22_19/8%)]' : 'font-medium text-ink-3 hover:text-ink',
           )}
         >
           {o.label}
@@ -312,13 +312,13 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         className={cx(
-          'flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[28px] bg-surface shadow-2xl sm:rounded-[24px] print:max-h-none print:shadow-none',
+          'flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[20px] bg-surface shadow-xl sm:rounded-2xl print:max-h-none print:shadow-none',
           wide ? 'sm:max-w-3xl' : 'sm:max-w-lg',
         )}
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex items-center justify-between gap-3 border-b border-line-soft px-5 py-3 print:hidden">
-          <h2 id={titleId} className="font-display text-xl font-bold">
+          <h2 id={titleId} className="text-lg font-semibold">
             {title}
           </h2>
           <IconButton label="Fermer" onClick={onClose} data-close>
@@ -359,8 +359,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={t.id}
             className={cx(
-              'pointer-events-auto max-w-md rounded-2xl px-4 py-3 text-[14px] font-semibold shadow-lg',
-              t.tone === 'ok' ? 'bg-ink text-white' : 'bg-danger text-white',
+              'pointer-events-auto max-w-md rounded-xl px-4 py-3 text-[14px] font-medium shadow-lg',
+              t.tone === 'ok' ? 'bg-[#1b211e] text-white' : 'bg-danger text-white',
             )}
           >
             {t.text}

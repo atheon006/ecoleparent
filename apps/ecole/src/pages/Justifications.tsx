@@ -28,7 +28,7 @@ export function JustificationsPage() {
             return (
               <Card as="li" key={a.id + a.studentId} className="flex flex-col gap-3 p-4">
                 <div className="flex flex-col gap-0.5">
-                  <span className="font-display text-lg font-bold">{a.studentName}</span>
+                  <span className="text-base font-semibold">{a.studentName}</span>
                   <span className="text-sm text-ink-3">
                     {s?.className} · {ATTENDANCE_LABELS[a.status]} le {formatLongCap(a.date)}
                   </span>

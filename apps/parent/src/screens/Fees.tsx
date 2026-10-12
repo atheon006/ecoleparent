@@ -21,42 +21,25 @@ export function FeesScreen({ nav }: { nav: Nav }) {
     <div>
       <RootHeader title="Frais scolaires" subtitle={`${active.student.firstName} · année ${yearOf(active)}`} nav={nav} />
 
-      <div className="pe-card mx-4 p-4">
-        <div className="text-[12.5px] font-semibold text-ink-3">Reste à payer</div>
-        <div className="flex items-end justify-between gap-3">
-          <div className="font-display text-[40px] leading-[1.05] font-extrabold tabular-nums">{formatMoney(f.remaining, cur)}</div>
-          <div className="text-right">
-            <div className="font-display text-lg font-extrabold text-ok">{pct} %</div>
-            <div className="text-xs text-ink-3">
-              payé · {formatMoney(f.total - f.remaining, cur)} sur {formatMoney(f.total, cur)}
-            </div>
-          </div>
+      <section className="px-5 pt-2">
+        <div className="text-[13px] text-ink-3">Reste à payer · année {yearOf(active)}</div>
+        <div className="flex items-baseline gap-2">
+          <span className="text-[40px] leading-[1.1] font-semibold tracking-tight tabular-nums">{formatMoney(f.remaining, cur)}</span>
+          <span className="text-sm text-ink-3">sur {formatMoney(f.total, cur)}</span>
         </div>
-        {f.fees.length > 0 && (
-          <div className="mt-3.5 flex h-3 gap-0.5" aria-hidden="true">
-            {f.fees.map((fs) => {
-              const part = fs.fee.totalAmount ? Math.min(1, fs.paid / fs.fee.totalAmount) : 1;
-              return (
-                <span
-                  key={fs.fee.id}
-                  title={fs.fee.name}
-                  className="rounded"
-                  style={{
-                    flex: fs.fee.totalAmount || 1,
-                    background: part >= 1 ? 'var(--ok)' : part > 0 ? `linear-gradient(90deg, var(--ok) ${part * 100}%, var(--color-warn-soft) ${part * 100}%)` : 'var(--color-muted)',
-                  }}
-                />
-              );
-            })}
-          </div>
-        )}
-      </div>
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+          <div className="h-full rounded-full bg-brand" style={{ width: `${pct}%` }} />
+        </div>
+        <div className="mt-1.5 text-[13px] text-ink-3">
+          {formatMoney(f.total - f.remaining, cur)} payés ({pct} %)
+        </div>
+      </section>
 
       {alert && (
-        <div className={cx('pe-card mx-4 mt-3 flex items-center gap-3 p-4', alert.level === 'danger' && 'border-danger-line bg-danger-soft')}>
-          <Tile icon={alert.level === 'danger' ? 'warning-circle' : 'hourglass'} tone={alert.level === 'danger' ? 'c' : 'a'} />
+        <div className={cx('mx-5 mt-[18px] flex gap-3 rounded-[14px] border px-4 py-3.5', alert.level === 'danger' ? 'border-danger-line bg-danger-soft' : 'border-[#f1d7a8] bg-warn-soft')}>
+          <Icon name="warning-circle" size={20} className={cx('mt-0.5', alert.level === 'danger' ? 'text-danger' : 'text-warn')} />
           <div className="min-w-0 flex-1">
-            <div className={cx('font-extrabold', alert.level === 'danger' && 'text-danger-ink')}>{alertTitle(alert)}</div>
+            <div className="font-semibold">{alertTitle(alert)}</div>
             <div className="text-[13px] text-ink-2">{alertText(alert, cur)}</div>
           </div>
         </div>
@@ -67,19 +50,12 @@ export function FeesScreen({ nav }: { nav: Nav }) {
           L'école n'a pas encore publié la grille des frais pour la classe de {active.student.firstName}.
         </EmptyState>
       ) : (
-        <>
-          <Section title="Détail des frais" />
-          <div className="flex flex-col gap-3">
-            {f.fees.map((fs) => (
-              <FeeCard key={fs.fee.id} fs={fs} currency={cur} />
-            ))}
-          </div>
-        </>
+        f.fees.map((fs) => <FeeCard key={fs.fee.id} fs={fs} currency={cur} />)
       )}
 
       {active.payments.length > 0 && (
         <>
-          <Section title="Paiements effectués" />
+          <Section title="Paiements" />
           <List>
             {active.payments.map((p) => (
               <Row
@@ -108,22 +84,24 @@ export function FeesScreen({ nav }: { nav: Nav }) {
 
 function FeeCard({ fs, currency }: { fs: FeeStatus; currency: string }) {
   return (
-    <section className="pe-card mx-4 px-4 py-1.5">
-      <div className="flex items-center justify-between pt-3 pb-2">
-        <h2 className="font-display text-[17px] font-extrabold">{fs.fee.name}</h2>
-        <span className="text-[15px] font-bold tabular-nums">{formatMoney(fs.fee.totalAmount, currency)}</span>
-      </div>
+    <section>
+      <h2 className="mx-5 mt-7 mb-1 text-[17px] font-semibold">
+        {fs.fee.name} <span className="font-medium text-ink-4">{formatMoney(fs.fee.totalAmount, currency)}</span>
+      </h2>
       {fs.installments.length === 0 ? (
-        <div className="flex items-center justify-between border-t border-line-soft py-3 text-sm">
-          <span className="text-ink-3">Payé</span>
-          <span className="font-bold">{formatMoney(fs.paid, currency)}</span>
-        </div>
+        <List>
+          <Row
+            left={<Icon name={fs.paid >= fs.fee.totalAmount ? 'check-circle' : 'clock'} size={20} className={fs.paid >= fs.fee.totalAmount ? 'text-ok' : 'text-warn'} />}
+            title={fs.paid >= fs.fee.totalAmount ? 'Réglé' : `${formatMoney(fs.paid, currency)} payés`}
+            end={<span className="text-ink-2 tabular-nums">{formatMoney(fs.fee.totalAmount, currency)}</span>}
+          />
+        </List>
       ) : (
-        <ol>
+        <List>
           {fs.installments.map((s) => (
             <InstallmentRow key={s.installment.id} s={s} currency={currency} />
           ))}
-        </ol>
+        </List>
       )}
     </section>
   );
@@ -133,41 +111,30 @@ function InstallmentRow({ s, currency }: { s: InstallmentStatus; currency: strin
   const { installment: inst, state } = s;
   const urgent = state === 'renvoi' || state === 'overdue' || (state === 'upcoming' && s.daysToDue <= 10);
   const partial = state !== 'paid' && s.paidTowards > 0;
+  const sub =
+    state === 'paid'
+      ? 'Réglée'
+      : [partial ? `${formatMoney(s.paidTowards, currency)} payés` : null, `avant le ${formatDayMonth(inst.dueDate)}`].filter(Boolean).join(' · ');
   return (
-    <li className="flex gap-3 border-t border-line-soft py-3">
-      {state === 'paid' ? (
-        <span className="tone-g flex size-7 shrink-0 items-center justify-center rounded-full">
-          <Icon name="check" size={16} label="Payée" />
-        </span>
-      ) : urgent ? (
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-full border-[3px] border-danger" aria-label="À payer, urgent">
-          <span className="size-2.5 rounded-full bg-danger" />
-        </span>
-      ) : (
-        <span className="size-7 shrink-0 rounded-full border-2 border-field" aria-label="À venir" />
-      )}
-      <div className="flex flex-1 flex-col gap-1">
-        <span className="text-[15px] font-bold">{inst.name}</span>
-        {state === 'paid' ? (
-          <span className="text-[13px] text-ink-3">Réglée</span>
-        ) : (
-          <>
-            <span className="text-[13px] text-ink-3">
-              Avant le {formatDayMonth(inst.dueDate)}
-              {partial && ` · ${formatMoney(s.paidTowards, currency)} payés sur ${formatMoney(inst.amount, currency)}`}
-            </span>
-            {inst.cutoffDate && (
-              <span className={cx('text-[13px]', urgent ? 'font-bold text-danger-ink' : 'text-ink-3')}>
-                {state === 'renvoi'
-                  ? `Renvoi depuis le ${formatDayMonth(inst.cutoffDate)} · manque ${formatMoney(s.missing, currency)}`
-                  : `Renvoi le ${formatDayMonth(inst.cutoffDate)} si moins de ${formatMoney(s.required, currency)} payés`}
-              </span>
-            )}
-          </>
+    <div className="flex items-center gap-3.5 py-3 pr-5">
+      <Icon
+        name={state === 'paid' ? 'check-circle' : urgent ? 'warning-circle' : 'clock'}
+        size={20}
+        className={state === 'paid' ? 'text-ok' : urgent ? 'text-danger' : 'text-ink-4'}
+      />
+      <span className="min-w-0 flex-1">
+        <span className="block text-[15px] font-medium">{inst.name}</span>
+        <span className="block text-[13px] text-ink-3">{sub.charAt(0).toUpperCase() + sub.slice(1)}</span>
+        {state !== 'paid' && inst.cutoffDate && urgent && (
+          <span className="block text-[13px] font-medium text-danger">
+            {state === 'renvoi'
+              ? `Renvoi depuis le ${formatDayMonth(inst.cutoffDate)} · manque ${formatMoney(s.missing, currency)}`
+              : `Renvoi le ${formatDayMonth(inst.cutoffDate)} sous ${formatMoney(s.required, currency)} payés`}
+          </span>
         )}
-      </div>
-      <span className="text-[15px] font-bold tabular-nums">{formatMoney(inst.amount, currency)}</span>
-    </li>
+      </span>
+      <span className="text-ink-2 tabular-nums">{formatMoney(inst.amount, currency)}</span>
+    </div>
   );
 }
 
@@ -206,7 +173,7 @@ export function ReceiptScreen({ nav, id }: { nav: Nav; id: string }) {
   const line = (label: string, value: string, mono?: boolean) => (
     <div className="flex justify-between gap-3">
       <span className="text-ink-3">{label}</span>
-      <span className={cx('text-right font-bold', mono && 'font-mono')}>{value}</span>
+      <span className={cx('text-right font-semibold', mono && 'font-mono')}>{value}</span>
     </div>
   );
   return (
@@ -217,9 +184,9 @@ export function ReceiptScreen({ nav, id }: { nav: Nav; id: string }) {
           <span className="inline-flex">
             {school?.logo ? <img src={school.logo} alt="" className="size-12 rounded-xl object-contain" /> : <Tile icon="seal-check" tone="g" />}
           </span>
-          <div className="mt-2 font-extrabold">{school?.name}</div>
+          <div className="mt-2 font-semibold">{school?.name}</div>
           {school?.address && <div className="text-xs text-ink-3">{school.address}</div>}
-          <div className="mt-2.5 font-display text-[34px] font-extrabold tabular-nums">{formatMoney(p.amount, active.currency)}</div>
+          <div className="mt-2.5 text-[34px] font-semibold tabular-nums">{formatMoney(p.amount, active.currency)}</div>
           <div className="text-[12.5px] text-ink-3">{p.feeName}</div>
         </div>
         <div className="grid gap-2 px-[18px] pt-3.5 pb-[18px] text-[13.5px]">

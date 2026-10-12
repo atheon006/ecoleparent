@@ -44,7 +44,7 @@ export function RequestsPage() {
                 <span className="text-[13px] text-ink-3">{formatShort(r.createdAt.slice(0, 10))}</span>
                 {r.status !== 'pending' && <Badge tone={r.status === 'done' ? 'brand' : 'danger'}>{r.status === 'done' ? 'Traitée' : 'Refusée'}</Badge>}
               </div>
-              <span className="font-bold">
+              <span className="font-semibold">
                 {r.studentName} <span className="font-normal text-ink-3">· demandé par {r.parentName}</span>
               </span>
               {r.pickup && (
@@ -169,12 +169,12 @@ function Attestation({ student: s, onClose }: { student: Student; onClose: () =>
         <div className="flex items-center gap-3">
           {school?.logo && <img src={school.logo} alt="" className="size-16 object-contain" />}
           <div>
-            <div className="text-lg font-bold">{school?.name}</div>
+            <div className="text-lg font-semibold">{school?.name}</div>
             {school?.address && <div className="text-sm">{school.address}</div>}
             {school?.phone && <div className="text-sm">Tél. {school.phone}</div>}
           </div>
         </div>
-        <h2 className="text-center text-xl font-bold tracking-wide uppercase underline">Attestation de fréquentation</h2>
+        <h2 className="text-center text-xl font-semibold tracking-wide uppercase underline">Attestation de fréquentation</h2>
         <p>
           Je soussigné(e), {school?.directorName || '……………………………'}, chef d'établissement de {school?.name}, atteste que l'élève{' '}
           <strong>{fullName(s)}</strong>

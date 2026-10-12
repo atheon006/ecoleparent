@@ -78,7 +78,7 @@ function AnnouncementCard({ a, child }: { a: Announcement; child: Child }) {
         <Tile icon={st.icon} tone={st.tone} />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
-            <h2 className="text-[15px] leading-snug font-extrabold">{a.title}</h2>
+            <h2 className="text-[15px] leading-snug font-semibold">{a.title}</h2>
             <span className="shrink-0 text-[11.5px] text-ink-3">{formatShort(a.publishedAt.slice(0, 10))}</span>
           </div>
           <p className="mt-1 text-[13.5px] leading-relaxed whitespace-pre-line text-ink-2">{a.content}</p>

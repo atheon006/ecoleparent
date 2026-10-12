@@ -7,6 +7,8 @@
 // message et l'envoie par Firebase Cloud Messaging aux parents concernés.
 // Il passe chaque minute (cron) et tout de suite quand le site l'appelle sur POST /kick.
 
+import { ImportError, callGemini, checkInput, type ImportInput } from './ai';
+
 export interface Env {
   PROJECT_ID: string;
   PARENT_URL: string;
@@ -18,6 +20,12 @@ export interface Env {
    * notés dans `globalThis.__peSent` au lieu de partir vers FCM.
    */
   FIRESTORE_EMULATOR_HOST?: string;
+  /** Clé de l'API Gemini (secret : `wrangler secret put GEMINI_API_KEY`) pour l'import de documents. */
+  GEMINI_API_KEY?: string;
+  /** Modèle Gemini (facultatif, par défaut « gemini-flash-latest »). */
+  GEMINI_MODEL?: string;
+  /** Analyses de documents permises par école et par jour (40 par défaut). */
+  AI_DAILY_LIMIT?: string;
 }
 
 type Kind =
@@ -79,11 +87,12 @@ export default {
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     if (url.pathname === '/kick' && req.method === 'POST') {
       const auth = req.headers.get('authorization') ?? '';
-      const ok = auth.startsWith('Bearer ') && (await verifyIdToken(env, auth.slice(7)).catch(() => false));
+      const ok = auth.startsWith('Bearer ') && !!(await verifyIdToken(env, auth.slice(7)).catch(() => null));
       if (!ok) return new Response('Non autorisé', { status: 401, headers: cors });
       ctx.waitUntil(processOutbox(env).catch((e) => console.error('kick', e)));
       return new Response(null, { status: 202, headers: cors });
     }
+    if (url.pathname === '/ai/import' && req.method === 'POST') return handleImport(req, env, cors);
     if (url.pathname === '/') return new Response('ParentEcole · notifications : en service\n');
     return new Response('Introuvable\n', { status: 404 });
   },
@@ -100,7 +109,7 @@ function corsHeaders(req: Request, env: Env): HeadersInit {
     ? {
         'Access-Control-Allow-Origin': origin,
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Authorization',
+        'Access-Control-Allow-Headers': 'Authorization, Content-Type',
         'Access-Control-Max-Age': '86400',
         Vary: 'Origin',
       }
@@ -370,6 +379,62 @@ function removeTokens(api: Api, stale: Target[]) {
   }));
 }
 
+// ── Import de documents avec Gemini (espace école) ─────────────────────────────
+
+function json(body: unknown, status: number, cors: HeadersInit): Response {
+  return new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json; charset=utf-8' } });
+}
+
+/**
+ * POST /ai/import : réservé au personnel de l'école (jeton Firebase avec second facteur).
+ * La direction peut tout importer ; un professeur seulement préparer une interrogation.
+ */
+export async function handleImport(req: Request, env: Env, cors: HeadersInit): Promise<Response> {
+  try {
+    const auth = req.headers.get('authorization') ?? '';
+    const token = auth.startsWith('Bearer ') ? await verifyIdToken(env, auth.slice(7)).catch(() => null) : null;
+    if (!token?.email || !token.email_verified || !token.firebase?.sign_in_second_factor) return json({ error: 'Connexion du personnel requise.' }, 401, cors);
+    const email = token.email.toLowerCase();
+
+    const body = (await req.json().catch(() => null)) as (ImportInput & { schoolId?: string }) | null;
+    if (!body || typeof body.schoolId !== 'string' || !body.schoolId) return json({ error: 'Demande incomplète.' }, 400, cors);
+    checkInput(body);
+
+    const api = new Api(env);
+    const member = await api.get(`members/${email}`);
+    const m = member ? data(member) : null;
+    const isSuper = !m && !!(await api.get(`superadmins/${email}`));
+    const sameSchool = !!m && m.schoolId === body.schoolId && m.active === true;
+    const allowed = isSuper || (sameSchool && (m!.role === 'admin' || (m!.role === 'professeur' && body.kind === 'quiz')));
+    if (!allowed) return json({ error: "Vous n'avez pas le droit d'importer pour cette école." }, 403, cors);
+
+    // Plafond quotidien par école : maîtrise du coût et des abus.
+    const day = new Date().toISOString().slice(0, 10);
+    const usagePath = `aiUsage/${body.schoolId}_${day}`;
+    const usage = await api.get(usagePath);
+    const used = usage ? Number(data(usage).count ?? 0) : 0;
+    const limit = Number(env.AI_DAILY_LIMIT ?? 40);
+    if (used >= limit) return json({ error: `Limite de ${limit} analyses par jour atteinte pour l'école. Réessayez demain.` }, 429, cors);
+
+    const result = await callGemini(env, body);
+    await api
+      .commit([
+        {
+          transform: {
+            document: `${api.root}/${usagePath}`,
+            fieldTransforms: [{ fieldPath: 'count', increment: { integerValue: '1' } }],
+          },
+        },
+      ])
+      .catch((e) => console.warn('aiUsage', e));
+    return json({ result, used: used + 1, limit }, 200, cors);
+  } catch (e) {
+    if (e instanceof ImportError) return json({ error: e.message }, e.status, cors);
+    console.error('ai/import', e);
+    return json({ error: "L'analyse a échoué. Réessayez." }, 500, cors);
+  }
+}
+
 // ── Accès aux API Google (Firestore REST, FCM v1) ────────────────────────────
 
 interface FsValue {
@@ -551,22 +616,37 @@ class Api {
 
 let jwks: { keys: (JsonWebKey & { kid?: string })[]; exp: number } | null = null;
 
-async function verifyIdToken(env: Env, token: string): Promise<boolean> {
+interface IdTokenPayload {
+  aud?: string;
+  iss?: string;
+  exp?: number;
+  sub?: string;
+  email?: string;
+  email_verified?: boolean;
+  firebase?: { sign_in_second_factor?: string };
+}
+
+/** Vérifie la signature d'un jeton Firebase ; renvoie son contenu, ou null s'il n'est pas valable. */
+async function verifyIdToken(env: Env, token: string): Promise<IdTokenPayload | null> {
   const [h, p, s] = token.split('.');
-  if (!h || !p || !s) return false;
+  if (!h || !p) return null;
   const header = JSON.parse(fromB64url(h)) as { kid?: string; alg?: string };
-  const payload = JSON.parse(fromB64url(p)) as { aud?: string; iss?: string; exp?: number; sub?: string };
-  if (header.alg !== 'RS256' || payload.aud !== env.PROJECT_ID || payload.iss !== `https://securetoken.google.com/${env.PROJECT_ID}`) return false;
-  if (!payload.sub || !payload.exp || payload.exp * 1000 < Date.now()) return false;
+  const payload = JSON.parse(fromB64url(p)) as IdTokenPayload;
+  if (payload.aud !== env.PROJECT_ID || payload.iss !== `https://securetoken.google.com/${env.PROJECT_ID}`) return null;
+  if (!payload.sub || !payload.exp || payload.exp * 1000 < Date.now()) return null;
+  // Tests seulement : l'émulateur d'authentification signe ses jetons avec « none ».
+  if (env.FIRESTORE_EMULATOR_HOST && header.alg === 'none') return payload;
+  if (header.alg !== 'RS256' || !s) return null;
   if (!jwks || jwks.exp < Date.now()) {
     const res = await fetch('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com');
     const maxAge = Number(/max-age=(\d+)/.exec(res.headers.get('cache-control') ?? '')?.[1] ?? 3600);
     jwks = { keys: ((await res.json()) as { keys: (JsonWebKey & { kid?: string })[] }).keys, exp: Date.now() + maxAge * 1000 };
   }
   const jwk = jwks.keys.find((k) => k.kid === header.kid);
-  if (!jwk) return false;
+  if (!jwk) return null;
   const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
-  return crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64urlBytes(s), new TextEncoder().encode(`${h}.${p}`));
+  const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64urlBytes(s), new TextEncoder().encode(`${h}.${p}`));
+  return ok ? payload : null;
 }
 
 // ── Encodages ────────────────────────────────────────────────────────────────

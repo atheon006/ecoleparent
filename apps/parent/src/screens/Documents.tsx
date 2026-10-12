@@ -64,7 +64,7 @@ export function DocumentsScreen({ nav }: { nav: Nav }) {
               <a key={d.id} href={d.url} target={isNative ? undefined : '_blank'} rel="noreferrer" className="flex items-center gap-3 px-4 py-3">
                 <Tile icon={st.icon} tone={st.tone} />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[15px] font-bold">{d.title}</span>
+                  <span className="block text-[15px] font-semibold">{d.title}</span>
                   <span className="block text-[13px] text-ink-3">{d.category}</span>
                 </span>
                 <Icon name="export" size={18} className="text-ink-3" />
@@ -80,7 +80,7 @@ export function DocumentsScreen({ nav }: { nav: Nav }) {
       ) : (
         <List>
           {active.bulletins.map((b) => (
-            <Row key={b.id} left={<Tile icon="file-pdf" tone="c" />} title={`${b.periodLabel} ${b.year}`} sub={b.className} onClick={() => nav.push({ name: 'bulletin', id: b.id })} />
+            <Row key={b.id} left={<Tile icon="file-pdf" />} title={`${b.periodLabel} ${b.year}`} sub={b.className} onClick={() => nav.push({ name: 'bulletin', id: b.id })} />
           ))}
         </List>
       )}

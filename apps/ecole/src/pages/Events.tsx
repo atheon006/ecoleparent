@@ -196,7 +196,7 @@ function EventForm({ event, onClose }: { event: SchoolEvent | null; onClose: () 
           <Checkbox label="Demander aux parents s'ils viennent" hint="Vous voyez le nombre de présents prévus." checked={rsvp} onChange={(e) => setRsvp(e.target.checked)} />
         )}
         <fieldset>
-          <legend className="mb-1 text-sm font-bold">Classes concernées (aucune cochée = toute l'école)</legend>
+          <legend className="mb-1 text-sm font-semibold">Classes concernées (aucune cochée = toute l'école)</legend>
           <div className="grid gap-x-4 sm:grid-cols-3">
             {classes.map((c) => (
               <Checkbox key={c.id} label={c.name} checked={classIds.includes(c.id)} onChange={(e) => setClassIds(e.target.checked ? [...classIds, c.id] : classIds.filter((x) => x !== c.id))} />

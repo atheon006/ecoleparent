@@ -119,6 +119,24 @@ Puis mettre cette adresse dans `VITE_PUSH_URL` (fichier `.env` et variable GitHu
 
 Sans push, l'app affiche ces mêmes nouveautés sous la cloche de l'accueil.
 
+## Import de documents avec Gemini
+
+Dans l'espace école, **Importer avec Gemini** lit un document (PDF, Word, Excel, CSV ou photo) et propose des **élèves**, des **classes avec leurs branches**, l'**horaire** d'une classe, ou une **interrogation** préparée à partir d'un cours. La direction vérifie et corrige chaque ligne ; rien n'est enregistré sans validation. Les professeurs ne peuvent préparer que des interrogations.
+
+- Le navigateur convertit Word (mammoth) et Excel (read-excel-file) en texte ; PDF et photos (allégées à 2000 px) partent tels quels.
+- Le Worker (`POST /ai/import`) vérifie le jeton Firebase du membre du personnel (second facteur compris), son rôle et son école, applique un plafond quotidien par école (`AI_DAILY_LIMIT`, 40 par défaut), puis interroge l'API Gemini avec un schéma JSON strict. Le document n'est pas conservé.
+- Mise en service : créez une clé sur https://aistudio.google.com/apikey, puis
+
+```bash
+cd push && npx wrangler secret put GEMINI_API_KEY   # coller la clé quand elle est demandée
+```
+
+  Modèle facultatif : variable `GEMINI_MODEL` (par défaut `gemini-flash-latest`). Pour des données d'élèves, préférez l'offre payante de l'API (sur l'offre gratuite, Google peut utiliser les contenus envoyés pour améliorer ses produits) et fixez un plafond de dépenses dans Google Cloud.
+
+## Design
+
+Version épurée : fond blanc, une seule police (Figtree), un seul vert d'accent, la couleur réservée aux états (absent, retard, paiement urgent), icônes Lucide. Illustrations : [unDraw](https://undraw.co) (licence libre, usage commercial autorisé), recolorées aux couleurs de ParentEcole.
+
 ## Commandes utiles
 
 | Commande | Effet |

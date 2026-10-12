@@ -32,7 +32,7 @@ export function CashierPage() {
                     selected?.id === s.id ? 'border-brand bg-brand-soft' : 'border-line bg-surface hover:border-brand/50',
                   )}
                 >
-                  <span className="font-bold">{fullName(s)}</span>
+                  <span className="font-semibold">{fullName(s)}</span>
                   <span className="text-[13px] text-ink-3">
                     {s.className} · {s.matricule}
                   </span>
@@ -102,7 +102,7 @@ function PaymentForm({ student, onDone }: { student: Student; onDone: () => void
   return (
     <Card className="flex flex-col gap-4 p-5">
       <div className="flex flex-col gap-0.5">
-        <span className="font-display text-xl font-bold">{fullName(student)}</span>
+        <span className="text-lg font-semibold">{fullName(student)}</span>
         <span className="text-sm text-ink-3">
           {student.className} · {student.matricule} · {student.parentName} ({student.parentPhone})
         </span>

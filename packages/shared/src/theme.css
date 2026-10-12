@@ -1,36 +1,41 @@
-/* Charte ParentEcole : vert tableau, jaune craie, fond papier. Importé par les deux applis. */
+/* Charte ParentEcole, version épurée : fond blanc, gris neutres, un seul vert d'accent ;
+   la couleur sert surtout à signaler un état (absent, retard, paiement urgent). Importé par les deux applis. */
 @theme {
-  --color-ground: #f4f5f0;
+  /* Fond discret (barre latérale, encadrés) ; les pages elles-mêmes sont blanches (surface). */
+  --color-ground: #f6f7f4;
   --color-surface: #ffffff;
-  --color-muted: #e7eae3;
-  --color-line: #dee3db;
-  --color-line-soft: #edf0ea;
-  --color-ink: #16231c;
-  --color-ink-2: #4a5850;
-  --color-ink-3: #5a675f;
-  --color-ink-4: #6b776f;
+  --color-muted: #f1f2ef;
+  --color-line: #e6e8e4;
+  --color-line-soft: #eceeea;
+  --color-ink: #111613;
+  --color-ink-2: #3d4641;
+  --color-ink-3: #6b746f;
+  --color-ink-4: #8a938d;
 
   --color-brand: #1e4a38;
   --color-brand-2: #2c5d49;
   --color-brand-3: #163a2c;
-  --color-brand-soft: #e3ede7;
+  --color-brand-soft: #eef3f0;
   --color-brand-ink: #c9dcd1;
   --color-chalk: #f0b429;
 
-  --color-danger: #b4421f;
-  --color-danger-ink: #8e3315;
+  --color-ok: #1f7a4f;
+  --color-ok-soft: #ecf6f0;
+  --color-danger: #b42318;
+  --color-danger-ink: #912018;
   --color-danger-text: #3d1e12;
-  --color-danger-soft: #fbe9e1;
-  --color-danger-line: #f1c9b8;
-  --color-warn: #8a5a00;
-  --color-warn-soft: #fdf1d6;
-  --color-info: #2557a7;
-  --color-info-soft: #e6eefa;
+  --color-danger-soft: #fef3f2;
+  --color-danger-line: #f6d0cb;
+  --color-warn: #a15c07;
+  --color-warn-soft: #fffaeb;
+  --color-info: #2f5fc4;
+  --color-info-soft: #eff4ff;
   /* Bordure des champs de saisie. */
-  --color-field: #c4ccc6;
+  --color-field: #dcdfda;
 
   --font-sans: 'Figtree Variable', 'Figtree', system-ui, sans-serif;
-  --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', system-ui, sans-serif;
+  /* Une seule famille : les titres sont en Figtree demi-gras. */
+  --font-display: 'Figtree Variable', 'Figtree', system-ui, sans-serif;
 }
 
 @layer base {
@@ -39,7 +44,7 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    background: var(--color-ground);
+    background: var(--color-surface);
     color: var(--color-ink);
     font-family: var(--font-sans);
   }
@@ -51,7 +56,7 @@
     cursor: not-allowed;
   }
   :focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--color-chalk) 80%, transparent);
+    outline: 2px solid color-mix(in srgb, var(--color-brand) 60%, transparent);
     outline-offset: 2px;
   }
   input::placeholder,
@@ -62,7 +67,7 @@
 
 @utility font-display {
   font-family: var(--font-display);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.012em;
 }
 
 @utility scrollbar-none {

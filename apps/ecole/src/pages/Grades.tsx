@@ -35,9 +35,9 @@ export function guessPeriod(today = todayISO()): PeriodId {
 
 export function ClassPicker({ classes, value, onChange }: { classes: ClassRoom[]; value: string; onChange: (id: string) => void }) {
   return (
-    <label className="flex flex-1 flex-col gap-1 text-sm font-bold">
+    <label className="flex flex-1 flex-col gap-1 text-sm font-semibold">
       Classe
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="h-12 rounded-xl border border-[#c4ccc6] bg-surface px-3 text-[16px] font-normal">
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="h-12 rounded-xl border border-field bg-surface px-3 text-[16px] font-normal">
         {classes.map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}
@@ -105,7 +105,7 @@ export function GradesPage() {
           {role === 'admin' ? (
             <>
               Ajoutez-les dans{' '}
-              <a href="#/classes" className="font-bold underline">
+              <a href="#/classes" className="font-semibold underline">
                 Classes
               </a>{' '}
               (bouton « Branches »).
@@ -279,7 +279,7 @@ function EvaluationForm({ cls, evaluation, defaultPeriod, onClose }: { cls: Clas
 
         <div className="rounded-[16px] border border-line">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-ground/60 px-4 py-2.5 text-sm">
-            <span className="font-bold">
+            <span className="font-semibold">
               {classStudents.length} élève{classStudents.length > 1 ? 's' : ''} · laissez vide pour un absent
             </span>
             <span className="text-ink-2">
@@ -306,8 +306,8 @@ function EvaluationForm({ cls, evaluation, defaultPeriod, onClose }: { cls: Clas
                       onChange={(e) => setScores((x) => ({ ...x, [s.id]: e.target.value }))}
                       aria-invalid={bad}
                       className={cx(
-                        'h-11 w-20 rounded-lg border bg-surface px-2 text-center text-[16px] font-bold',
-                        bad ? 'border-danger text-danger-ink' : 'border-[#c4ccc6]',
+                        'h-11 w-20 rounded-lg border bg-surface px-2 text-center text-[16px] font-semibold',
+                        bad ? 'border-danger text-danger-ink' : 'border-field',
                         v !== null && !bad && v < maxValue / 2 && 'text-danger-ink',
                       )}
                     />
@@ -372,11 +372,11 @@ function Recap({ cls, period }: { cls: ClassRoom; period: PeriodId }) {
           <tr key={r.s.id}>
             <td className="font-semibold whitespace-nowrap">{fullName(r.s)}</td>
             {r.points.map((p, i) => (
-              <td key={subjects[i].id} className={cx('text-center', p !== null && p < periodMax(subjects[i], period) / 2 && 'font-bold text-danger-ink')}>
+              <td key={subjects[i].id} className={cx('text-center', p !== null && p < periodMax(subjects[i], period) / 2 && 'font-semibold text-danger-ink')}>
                 {p === null ? '—' : fmt(p)}
               </td>
             ))}
-            <td className="font-bold whitespace-nowrap">{r.percent === null ? '—' : formatPercent(r.percent)}</td>
+            <td className="font-semibold whitespace-nowrap">{r.percent === null ? '—' : formatPercent(r.percent)}</td>
           </tr>
         ))}
       </Table>

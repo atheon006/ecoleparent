@@ -6,6 +6,7 @@ import { useParentData } from '../data';
 import { agendaItems, yearOf, type AgendaItem } from '../helpers';
 import type { Nav } from '../nav';
 import { RsvpButtons } from './Home';
+import calImg from '../assets/illustrations/calendrier.svg';
 
 type Filter = 'all' | 'Réunion' | 'Examen' | 'Congé' | 'Activité' | 'Paiement' | 'holiday';
 
@@ -38,7 +39,7 @@ export function AgendaScreen({ nav }: { nav: Nav }) {
         ]}
       />
       {list.length === 0 ? (
-        <EmptyState icon="calendar-blank" tone="c" title="Rien de prévu">
+        <EmptyState icon="calendar-blank" image={calImg} title="Rien de prévu">
           Les réunions, examens et congés annoncés par l'école apparaîtront ici.
         </EmptyState>
       ) : (
@@ -51,7 +52,7 @@ export function AgendaScreen({ nav }: { nav: Nav }) {
                   <Pill tone="bad" className="mb-1">
                     Jour férié
                   </Pill>
-                  <div className="font-extrabold">{i.name}</div>
+                  <div className="font-semibold">{i.name}</div>
                   <div className="text-[13px] text-ink-3">Pas de cours</div>
                 </div>
               </div>
@@ -60,7 +61,7 @@ export function AgendaScreen({ nav }: { nav: Nav }) {
                 <DateBox date={i.date} tone={TONE[i.event.category]} />
                 <div className="min-w-0 flex-1">
                   <Pill className="mb-1">{i.event.category}</Pill>
-                  <div className="font-extrabold">{i.event.title}</div>
+                  <div className="font-semibold">{i.event.title}</div>
                   <div className="text-[13px] text-ink-3">
                     {[i.endDate && i.endDate !== i.date ? `Jusqu'au ${formatShort(i.endDate)}` : null, i.event.time, i.event.place].filter(Boolean).join(' · ')}
                   </div>

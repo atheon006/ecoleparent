@@ -31,15 +31,15 @@ export function Settings({ nav }: { nav: Nav }) {
   return (
     <div>
       <SubHeader title="Paramètres" onBack={nav.back} />
-      <button type="button" onClick={() => nav.push({ name: 'account' })} className="pe-card mx-4 flex w-[calc(100%-2rem)] items-center gap-3.5 p-4 text-left">
-        <span className="tone-a flex size-[52px] shrink-0 items-center justify-center rounded-full font-display text-lg font-extrabold">{nameInitials(user?.displayName || user?.email || 'P')}</span>
+      <button type="button" onClick={() => nav.push({ name: 'account' })} className="mx-4 flex w-[calc(100%-2rem)] items-center gap-3.5 rounded-[14px] bg-surface p-4 text-left">
+        <span className="tone-a flex size-[52px] shrink-0 items-center justify-center rounded-full text-lg font-semibold">{nameInitials(user?.displayName || user?.email || 'P')}</span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-base font-extrabold">{user?.displayName || 'Mon compte'}</span>
+          <span className="block truncate text-base font-semibold">{user?.displayName || 'Mon compte'}</span>
           <span className="block truncate text-[13px] text-ink-3">{user?.email}</span>
         </span>
       </button>
-      <Section title="Préférences" />
-      <List>
+      <Section small title="Préférences" />
+      <List grouped>
         <Row left={<Tile icon="bell" tone="a" />} title="Notifications" sub={`${enabled} catégorie${enabled > 1 ? 's' : ''} sur ${NOTIF_CATEGORIES.length}${userDoc?.prefs?.quiet ? ' · heures calmes' : ''}`} onClick={() => nav.push({ name: 'settings-notifs' })} />
         <Row
           left={<Tile icon="circle-half" tone="v" />}
@@ -48,13 +48,13 @@ export function Settings({ nav }: { nav: Nav }) {
           onClick={() => nav.push({ name: 'settings-appearance' })}
         />
       </List>
-      <Section title="Sécurité et données" />
-      <List>
+      <Section small title="Sécurité et données" />
+      <List grouped>
         <Row left={<Tile icon="lock-key" tone="b" />} title="Verrouillage et appareils" sub={pin ? 'Code activé' : 'Code désactivé'} onClick={() => nav.push({ name: 'settings-security' })} />
         <Row left={<Tile icon="cloud-check" tone="t" />} title="Données et compte" sub="Exporter, vider le cache, supprimer le compte" onClick={() => nav.push({ name: 'settings-data' })} />
       </List>
-      <Section title="Aide" />
-      <List>
+      <Section small title="Aide" />
+      <List grouped>
         <Row left={<Tile icon="question" tone="b" />} title="Centre d'aide et contact" onClick={() => nav.push({ name: 'help' })} />
         <Row left={<Tile icon="info" tone="g" />} title="À propos" sub={`ParentEcole · version ${__APP_VERSION__}`} />
       </List>
@@ -65,7 +65,7 @@ export function Settings({ nav }: { nav: Nav }) {
             await nativeGoogleSignOut();
             await signOut();
           }}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-[15px] bg-danger-soft font-extrabold text-danger-ink"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-[15px] bg-danger-soft font-semibold text-danger-ink"
         >
           Se déconnecter
         </button>
@@ -104,25 +104,25 @@ export function NotificationSettings({ nav }: { nav: Nav }) {
   return (
     <div>
       <SubHeader title="Notifications" onBack={nav.back} />
-      <Section title="Ce que vous recevez" />
-      <List>
+      <Section small title="Ce que vous recevez" />
+      <List grouped>
         {NOTIF_CATEGORIES.map((c) => (
-          <div key={c.id} className="flex items-center gap-3 px-4 py-3">
+          <div key={c.id} className="flex items-center gap-3 py-3 pr-4">
             <Tile icon={CAT_STYLE[c.id].icon} tone={CAT_STYLE[c.id].tone} />
             <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-bold">{c.label}</span>
+              <span className="block text-[15px] font-semibold">{c.label}</span>
               <span className="block text-[13px] text-ink-3">{c.hint}</span>
             </span>
             <Switch checked={notif[c.id] !== false} label={c.label} onChange={(v) => void save({ ...prefs, notif: { ...notif, [c.id]: v } })} />
           </div>
         ))}
       </List>
-      <Section title="Quand" />
-      <List>
-        <div className="flex items-center gap-3 px-4 py-3">
+      <Section small title="Quand" />
+      <List grouped>
+        <div className="flex items-center gap-3 py-3 pr-4">
           <Tile icon="moon" tone="v" />
           <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-bold">Heures calmes</span>
+            <span className="block text-[15px] font-semibold">Heures calmes</span>
             <span className="block text-[13px] text-ink-3">Pas de notification de 21 h à 6 h : elles attendent le matin dans les nouveautés</span>
           </span>
           <Switch checked={!!prefs.quiet} label="Heures calmes" onChange={(v) => void save({ ...prefs, quiet: v })} />
@@ -149,7 +149,7 @@ export function AppearanceSettings({ nav }: { nav: Nav }) {
   return (
     <div>
       <SubHeader title="Apparence" onBack={nav.back} />
-      <Section title="Thème" />
+      <Section small title="Thème" />
       <div className="flex gap-2.5 px-4">
         {options.map(([id, label, bg, card, accent]) => (
           <button
@@ -157,7 +157,7 @@ export function AppearanceSettings({ nav }: { nav: Nav }) {
             type="button"
             aria-pressed={theme === id}
             onClick={() => setTheme(id)}
-            className={cx('grid flex-1 justify-items-center gap-2 rounded-[18px] border-2 bg-surface p-2.5 text-[13px] font-bold', theme === id ? 'border-brand' : 'border-line')}
+            className={cx('grid flex-1 justify-items-center gap-2 rounded-[18px] border-2 bg-surface p-2.5 text-[13px] font-semibold', theme === id ? 'border-brand' : 'border-line')}
           >
             <span className="grid h-[74px] w-full content-start gap-[5px] rounded-xl p-2" style={{ background: bg }}>
               <i className="block h-2 w-3/5 rounded" style={{ background: accent }} />
@@ -168,12 +168,12 @@ export function AppearanceSettings({ nav }: { nav: Nav }) {
           </button>
         ))}
       </div>
-      <Section title="Taille du texte" />
+      <Section small title="Taille du texte" />
       <div className="pe-card mx-4 p-4">
         <div className="flex items-baseline justify-between">
           <span className="text-[13px] text-ink-3">A</span>
-          <span className="font-display text-[15px] font-extrabold">{FONT_LABELS[index]}</span>
-          <span className="text-xl font-bold text-ink-3">A</span>
+          <span className="text-[15px] font-semibold">{FONT_LABELS[index]}</span>
+          <span className="text-xl font-semibold text-ink-3">A</span>
         </div>
         <input
           type="range"
@@ -215,12 +215,12 @@ export function SecuritySettings({ nav }: { nav: Nav }) {
   return (
     <div>
       <SubHeader title="Sécurité" onBack={nav.back} />
-      <Section title="Ouvrir l'application" />
-      <List>
-        <div className="flex items-center gap-3 px-4 py-3">
+      <Section small title="Ouvrir l'application" />
+      <List grouped>
+        <div className="flex items-center gap-3 py-3 pr-4">
           <Tile icon="lock-key" tone="b" />
           <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-bold">Code à 4 chiffres</span>
+            <span className="block text-[15px] font-semibold">Code à 4 chiffres</span>
             <span className="block text-[13px] text-ink-3">Demandé à l'ouverture et après une minute en arrière-plan</span>
           </span>
           <Switch
@@ -237,8 +237,8 @@ export function SecuritySettings({ nav }: { nav: Nav }) {
         </div>
       </List>
 
-      <Section title="Appareils qui reçoivent les notifications" />
-      <List>
+      <Section small title="Appareils qui reçoivent les notifications" />
+      <List grouped>
         {devices.length === 0 ? (
           <Row left={<Tile icon="devices" tone="v" />} title="Aucun appareil enregistré" sub="Autorisez les notifications pour en ajouter un" />
         ) : (
@@ -259,7 +259,7 @@ export function SecuritySettings({ nav }: { nav: Nav }) {
                         .then(() => toast('Cet appareil ne recevra plus de notifications.'))
                         .catch((err) => toast(errorMessage(err), 'error'))
                     }
-                    className="h-9 rounded-xl border border-line px-3 text-[13px] font-bold"
+                    className="h-9 rounded-xl border border-line px-3 text-[13px] font-semibold"
                   >
                     Retirer
                   </button>
@@ -378,13 +378,13 @@ export function DataSettings({ nav }: { nav: Nav }) {
   return (
     <div>
       <SubHeader title="Données et compte" onBack={nav.back} />
-      <Section title="Sur ce téléphone" />
-      <List>
+      <Section small title="Sur ce téléphone" />
+      <List grouped>
         <Row left={<Tile icon="cloud-check" tone="g" />} title="Consultation hors connexion" sub="Les dernières informations restent lisibles sans internet" end={<Pill tone="ok">Activée</Pill>} />
         <Row left={<Tile icon="trash" tone="a" />} title="Vider le cache" sub="Recharge tout depuis le serveur (utile en cas d'affichage bloqué)" onClick={() => void clearCache()} />
       </List>
-      <Section title="Vos données" />
-      <List>
+      <Section small title="Vos données" />
+      <List grouped>
         <Row left={<Tile icon="export" tone="b" />} title="Télécharger mes données" sub="Un fichier avec tout ce que vous voyez dans l'application" onClick={() => void exportData()} />
         <Row left={<Tile icon="trash" tone="c" />} title="Supprimer mon compte" sub="Les dossiers scolaires restent à l'école" onClick={() => setDeleting(true)} />
       </List>

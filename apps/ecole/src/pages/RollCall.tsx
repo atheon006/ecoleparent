@@ -78,9 +78,9 @@ export function RollCallPage() {
     <div>
       <PageHeader title="Appel" description="Cochez seulement les absents et les retards : tous les autres élèves sont marqués présents. Les parents sont informés dans l'application." />
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-        <label className="flex flex-1 flex-col gap-1 text-sm font-bold">
+        <label className="flex flex-1 flex-col gap-1 text-sm font-semibold">
           Classe
-          <select value={classId} onChange={(e) => setClassId(e.target.value)} className="h-12 rounded-xl border border-[#c4ccc6] bg-surface px-3 text-[16px] font-normal">
+          <select value={classId} onChange={(e) => setClassId(e.target.value)} className="h-12 rounded-xl border border-field bg-surface px-3 text-[16px] font-normal">
             {myClasses.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -88,9 +88,9 @@ export function RollCallPage() {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm font-bold sm:w-48">
+        <label className="flex flex-col gap-1 text-sm font-semibold sm:w-48">
           Date
-          <input type="date" value={date} max={todayISO()} onChange={(e) => setDate(e.target.value)} className="h-12 rounded-xl border border-[#c4ccc6] bg-surface px-3 font-normal" />
+          <input type="date" value={date} max={todayISO()} onChange={(e) => setDate(e.target.value)} className="h-12 rounded-xl border border-field bg-surface px-3 font-normal" />
         </label>
       </div>
 
@@ -125,14 +125,14 @@ export function RollCallPage() {
                         placeholder="Motif (facultatif)"
                         value={m.reason ?? ''}
                         onChange={(e) => setMarks((x) => ({ ...x, [s.id]: { ...m, reason: e.target.value } }))}
-                        className="h-10 rounded-lg border border-[#c4ccc6] bg-surface px-2.5 text-sm sm:w-48"
+                        className="h-10 rounded-lg border border-field bg-surface px-2.5 text-sm sm:w-48"
                       />
                     )}
                     <button
                       type="button"
                       aria-pressed={m?.status === 'absent'}
                       onClick={() => toggle(s.id, 'absent')}
-                      className={cx('min-h-10 rounded-lg border px-3 text-sm font-bold', m?.status === 'absent' ? 'border-danger bg-danger text-white' : 'border-line text-ink-2 hover:border-danger')}
+                      className={cx('min-h-10 rounded-lg border px-3 text-sm font-semibold', m?.status === 'absent' ? 'border-danger bg-danger text-white' : 'border-line text-ink-2 hover:border-danger')}
                     >
                       Absent
                     </button>
@@ -140,7 +140,7 @@ export function RollCallPage() {
                       type="button"
                       aria-pressed={m?.status === 'late'}
                       onClick={() => toggle(s.id, 'late')}
-                      className={cx('min-h-10 rounded-lg border px-3 text-sm font-bold', m?.status === 'late' ? 'border-chalk bg-chalk text-ink' : 'border-line text-ink-2 hover:border-chalk')}
+                      className={cx('min-h-10 rounded-lg border px-3 text-sm font-semibold', m?.status === 'late' ? 'border-warn bg-warn-soft text-warn' : 'border-line text-ink-2 hover:border-warn')}
                     >
                       Retard
                     </button>

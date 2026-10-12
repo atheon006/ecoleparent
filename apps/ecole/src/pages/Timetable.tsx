@@ -3,7 +3,7 @@ import { q, saveTimetable } from '@pe/shared/api';
 import { getFirebase } from '@pe/shared/firebase';
 import { useLiveQuery } from '@pe/shared/hooks';
 import { Button, Card, Empty, ErrorNote, Field, Modal, SelectField } from '@pe/shared/ui';
-import { CalendarClock, Copy, Plus } from 'lucide-react';
+import { CalendarClock, Copy, Plus, ScanText } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useAccess, useRole } from '../access';
 import { PageHeader, useAction } from '../components/common';
@@ -52,6 +52,9 @@ export function TimetablePage() {
         actions={
           isAdmin && (
             <>
+              <Button variant="secondary" icon={<ScanText size={16} aria-hidden="true" />} onClick={() => (window.location.hash = '/importer?type=timetable')}>
+                Depuis une photo
+              </Button>
               <Button variant="secondary" icon={<Copy size={16} aria-hidden="true" />} onClick={() => setCopying(true)} disabled={all.data.filter((t) => t.classId !== classId && t.slots.length).length === 0}>
                 Copier d'une classe
               </Button>
@@ -75,7 +78,7 @@ export function TimetablePage() {
             const list = slots.filter((s) => s.day === d);
             return (
               <Card key={d} className="flex flex-col gap-2 p-3">
-                <span className="px-1 font-display text-base font-bold">{WEEKDAY_LABELS[d]}</span>
+                <span className="px-1 text-base font-semibold">{WEEKDAY_LABELS[d]}</span>
                 {list.length === 0 ? (
                   <span className="px-1 text-sm text-ink-3">Pas de cours</span>
                 ) : (
@@ -84,7 +87,7 @@ export function TimetablePage() {
                       const index = slots.indexOf(s);
                       const body = (
                         <>
-                          <span className="text-xs font-bold text-ink-3">
+                          <span className="text-xs font-semibold text-ink-3">
                             {s.start} – {s.end}
                           </span>
                           <span className="font-semibold">{s.subject}</span>

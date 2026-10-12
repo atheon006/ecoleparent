@@ -15,7 +15,7 @@ export type Badges = Partial<Record<Tab, number>>;
 
 export function BottomNav({ tab, onChange, badges }: { tab: Tab; onChange: (t: Tab) => void; badges: Badges }) {
   return (
-    <nav aria-label="Navigation principale" className="grid grid-cols-5 border-t border-line bg-surface px-1.5 pt-[7px] pb-safe-3 lg:hidden">
+    <nav aria-label="Navigation principale" className="grid grid-cols-5 border-t border-line bg-surface px-1 pt-2 pb-safe-3 lg:hidden">
       {ITEMS.map(({ tab: t, label, icon }) => {
         const current = t === tab;
         return (
@@ -24,16 +24,11 @@ export function BottomNav({ tab, onChange, badges }: { tab: Tab; onChange: (t: T
             type="button"
             onClick={() => onChange(t)}
             aria-current={current ? 'page' : undefined}
-            className={cx('relative flex flex-col items-center gap-[3px] text-[11px]', current ? 'font-extrabold text-brand' : 'font-semibold text-ink-3')}
+            className={cx('relative flex flex-col items-center gap-1 text-[11px]', current ? 'font-semibold text-brand' : 'font-medium text-ink-3')}
           >
-            <span
-              className={cx('flex h-8 w-14 items-center justify-center rounded-2xl transition-colors', current && 'bg-brand-soft')}
-              style={current ? ({ '--duo': 'var(--color-chalk)', '--duo-op': 1 } as React.CSSProperties) : undefined}
-            >
-              <Icon name={icon} size={24} />
-            </span>
+            <Icon name={icon} size={23} strokeWidth={current ? 2 : 1.75} />
             {label}
-            <CountBadge n={badges[t] ?? 0} className="absolute top-0 right-[calc(50%-26px)]" />
+            <CountBadge n={badges[t] ?? 0} className="absolute -top-1 right-[calc(50%-24px)]" />
           </button>
         );
       })}
@@ -58,20 +53,17 @@ export function SideNav({
   notificationsOpen: boolean;
 }) {
   const item = (active: boolean) =>
-    cx('flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-[15px] transition-colors', active ? 'bg-brand-soft font-bold text-brand' : 'font-semibold text-ink-2 hover:bg-ground');
+    cx('flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-[15px] transition-colors', active ? 'bg-muted font-semibold text-ink' : 'font-medium text-ink-2 hover:bg-muted/60');
   return (
-    <nav aria-label="Navigation principale" className="hidden w-64 shrink-0 flex-col border-r border-line bg-surface px-4 py-6 lg:flex">
-      <div className="mb-8 flex items-center gap-3 px-2">
-        <span className="flex size-10 items-center justify-center rounded-xl bg-chalk text-ink">
-          <Icon name="student" size={24} />
-        </span>
-        <span className="font-display text-xl font-bold">ParentEcole</span>
+    <nav aria-label="Navigation principale" className="hidden w-60 shrink-0 flex-col border-r border-line bg-ground px-3 py-6 lg:flex">
+      <div className="mb-6 px-3 text-xl font-bold tracking-tight">
+        Parent<span className="text-brand">Ecole</span>
       </div>
       <ul className="flex flex-col gap-1">
         {ITEMS.map(({ tab: t, label, icon }) => (
           <li key={t}>
             <button type="button" onClick={() => onChange(t)} aria-current={t === tab && !notificationsOpen ? 'page' : undefined} className={item(t === tab && !notificationsOpen)}>
-              <Icon name={icon} size={22} />
+              <Icon name={icon} size={20} className={t === tab && !notificationsOpen ? 'text-brand' : 'text-ink-3'} />
               <span className="flex-1 text-left">{label}</span>
               <CountBadge n={badges[t] ?? 0} />
             </button>
@@ -81,7 +73,7 @@ export function SideNav({
       <ul className="mt-auto flex flex-col gap-1 border-t border-line pt-4">
         <li>
           <button type="button" onClick={onNotifications} aria-current={notificationsOpen ? 'page' : undefined} className={item(notificationsOpen)}>
-            <Icon name="bell" size={22} />
+            <Icon name="bell" size={20} className="text-ink-3" />
             <span className="flex-1 text-left">Nouveautés</span>
             <CountBadge n={unread} />
           </button>

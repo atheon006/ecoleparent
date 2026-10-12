@@ -7,8 +7,8 @@ export function PageHeader({ title, description, actions }: { title: string; des
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="flex max-w-2xl flex-col gap-1">
-        <h1 className="font-display text-[28px] leading-tight font-bold">{title}</h1>
-        {description && <p className="text-[15px] leading-relaxed text-ink-2">{description}</p>}
+        <h1 className="text-2xl leading-tight font-semibold tracking-tight">{title}</h1>
+        {description && <p className="text-[15px] leading-relaxed text-ink-3">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
@@ -25,7 +25,7 @@ export function SearchBox({ value, onChange, placeholder, className }: { value: 
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-12 w-full rounded-xl border border-[#c4ccc6] bg-surface pr-3 pl-10 text-[16px] outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+        className="h-11 w-full rounded-[10px] border border-field bg-surface pr-3 pl-10 text-[15px] outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
       />
     </label>
   );
@@ -34,12 +34,12 @@ export function SearchBox({ value, onChange, placeholder, className }: { value: 
 /** Tableau qui défile horizontalement sur petit écran. */
 export function Table({ head, children, empty }: { head: ReactNode[]; children: ReactNode; empty?: ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-[20px] border border-line bg-surface">
+    <div className="overflow-x-auto rounded-[14px] border border-line bg-surface">
       <table className="w-full min-w-[640px] border-collapse text-left text-[14px]">
         <thead>
-          <tr className="border-b border-line bg-ground/60">
+          <tr className="border-b border-line bg-ground">
             {head.map((h, i) => (
-              <th key={i} scope="col" className="px-4 py-3 text-xs font-bold tracking-wide whitespace-nowrap text-ink-3 uppercase">
+              <th key={i} scope="col" className="px-4 py-2.5 text-xs font-semibold whitespace-nowrap text-ink-3">
                 {h}
               </th>
             ))}
@@ -135,13 +135,14 @@ export function useAction() {
   return { busy, run };
 }
 
+/** Chiffre clé : la couleur seulement pour signaler un problème (danger, alerte). */
 export function StatTile({ label, value, sub, tone = 'brand' }: { label: string; value: ReactNode; sub?: ReactNode; tone?: 'brand' | 'danger' | 'warn' | 'info' }) {
-  const color = { brand: 'text-brand', danger: 'text-danger', warn: 'text-warn', info: 'text-info' }[tone];
+  const color = { brand: 'text-ink', danger: 'text-danger', warn: 'text-warn', info: 'text-ink' }[tone];
   return (
-    <div className="flex flex-col gap-1 rounded-[20px] border border-line bg-surface p-4">
-      <span className="text-[13px] font-semibold text-ink-3">{label}</span>
-      <span className={cx('font-display text-[30px] leading-none font-extrabold', color)}>{value}</span>
-      {sub && <span className="text-[13px] text-ink-2">{sub}</span>}
+    <div className="flex flex-col gap-0.5 rounded-[14px] border border-line bg-surface px-5 py-4">
+      <span className="text-[13px] text-ink-3">{label}</span>
+      <span className={cx('text-[28px] leading-tight font-semibold tracking-tight tabular-nums', color)}>{value}</span>
+      {sub && <span className="text-[13px] text-ink-3">{sub}</span>}
     </div>
   );
 }

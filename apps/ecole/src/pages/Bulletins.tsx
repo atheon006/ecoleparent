@@ -159,7 +159,7 @@ export function BulletinsPage() {
       {!subjects.length ? (
         <ErrorNote>
           Indiquez d'abord les branches de cette classe dans{' '}
-          <a href="#/classes" className="font-bold underline">
+          <a href="#/classes" className="font-semibold underline">
             Classes
           </a>
           .
@@ -185,7 +185,7 @@ export function BulletinsPage() {
           <Table head={['Place', 'Élève', 'Points', '%', 'Application', 'Conduite', '']}>
             {computed.map((r) => (
               <tr key={r.s.id} className={cx(!r.graded && 'opacity-60')}>
-                <td className="font-display text-lg font-bold">{r.rank ? ordinal(r.rank) : '—'}</td>
+                <td className="text-base font-semibold">{r.rank ? ordinal(r.rank) : '—'}</td>
                 <td>
                   <div className="font-semibold">{fullName(r.s)}</div>
                   {publishedById.has(r.s.id) ? <Badge tone="brand">Publié</Badge> : r.graded && <Badge tone="neutral">Non publié</Badge>}
@@ -193,7 +193,7 @@ export function BulletinsPage() {
                 <td className="whitespace-nowrap">
                   {r.graded ? `${fmt(r.totalPoints)} / ${fmt(r.totalMax)}` : '—'}
                 </td>
-                <td className={cx('font-bold whitespace-nowrap', r.graded && r.percent < 50 && 'text-danger-ink')}>{r.graded ? formatPercent(r.percent) : '—'}</td>
+                <td className={cx('font-semibold whitespace-nowrap', r.graded && r.percent < 50 && 'text-danger-ink')}>{r.graded ? formatPercent(r.percent) : '—'}</td>
                 <td>
                   <MentionSelect label={`Application · ${r.s.firstName}`} value={extras[r.s.id]?.application ?? (r.graded ? suggestedMention(r.percent) : '')} onChange={(v) => setExtra(r.s.id, { application: v })} />
                 </td>
@@ -236,7 +236,7 @@ export function BulletinsPage() {
 
 function MentionSelect({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
-    <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)} className="h-10 rounded-lg border border-[#c4ccc6] bg-surface px-2 text-sm">
+    <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)} className="h-10 rounded-lg border border-field bg-surface px-2 text-sm">
       <option value="">—</option>
       {MENTIONS.map((m) => (
         <option key={m}>{m}</option>
@@ -282,17 +282,17 @@ function BulletinModal({
       }
     >
       <div className="flex flex-col gap-5">
-        <div className="print-area flex flex-col gap-4 rounded-[20px] border border-line p-5">
+        <div className="print-area flex flex-col gap-4 rounded-[14px] border border-line p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               {school?.logo && <img src={school.logo} alt="" className="size-14 rounded-xl object-contain" />}
               <div>
-                <div className="font-display text-lg font-bold">{school?.name}</div>
+                <div className="text-base font-semibold">{school?.name}</div>
                 {school?.address && <div className="text-xs text-ink-3">{school.address}</div>}
               </div>
             </div>
             <div className="text-right text-sm">
-              <div className="font-bold">Bulletin · {b.periodLabel}</div>
+              <div className="font-semibold">Bulletin · {b.periodLabel}</div>
               <div className="text-ink-3">Année scolaire {b.year}</div>
             </div>
           </div>
@@ -323,7 +323,7 @@ function BulletinModal({
                   <td className={cx('py-1.5 text-right font-semibold', l.points !== null && l.points < l.max / 2 && 'text-danger-ink')}>{l.points === null ? '—' : fmt(l.points)}</td>
                 </tr>
               ))}
-              <tr className="font-bold">
+              <tr className="font-semibold">
                 <td className="py-2">Total</td>
                 <td className="py-2 text-right">{fmt(b.totalMax)}</td>
                 <td className="py-2 text-right">{fmt(b.totalPoints)}</td>
@@ -378,8 +378,8 @@ function BulletinModal({
 function Cell({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-ground px-3 py-2">
-      <div className="text-[11px] font-bold tracking-wide text-ink-3 uppercase">{label}</div>
-      <div className="font-bold">{value}</div>
+      <div className="text-[11px] font-semibold tracking-wide text-ink-3 uppercase">{label}</div>
+      <div className="font-semibold">{value}</div>
     </div>
   );
 }

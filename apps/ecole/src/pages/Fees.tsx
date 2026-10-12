@@ -36,13 +36,13 @@ export function FeesPage() {
               <Card key={fee.id} className="flex flex-col gap-3 p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex flex-col gap-1">
-                    <span className="font-display text-lg font-bold">{fee.name}</span>
+                    <span className="text-base font-semibold">{fee.name}</span>
                     <div className="flex flex-wrap gap-1.5">
                       <Badge tone="info">{FEE_TYPE_LABELS[fee.type]}</Badge>
                       <Badge tone="neutral">{fee.classIds.length ? fee.classIds.map((id) => classById.get(id)?.name ?? '?').join(', ') : 'Toutes les classes'}</Badge>
                     </div>
                   </div>
-                  <span className="font-display text-xl font-extrabold">{formatMoney(fee.totalAmount, currency)}</span>
+                  <span className="font-display text-xl font-semibold">{formatMoney(fee.totalAmount, currency)}</span>
                 </div>
                 {insts.length > 0 && (
                   <ol className="flex flex-col divide-y divide-line-soft text-sm">
@@ -154,7 +154,7 @@ function FeeEditor({ fee, onClose }: { fee: FeeCategory | null; onClose: () => v
         </div>
 
         <fieldset>
-          <legend className="mb-1 text-sm font-bold">Classes concernées (aucune cochée = toutes)</legend>
+          <legend className="mb-1 text-sm font-semibold">Classes concernées (aucune cochée = toutes)</legend>
           <div className="grid gap-x-4 sm:grid-cols-3">
             {classes.map((c) => (
               <Checkbox
@@ -168,8 +168,8 @@ function FeeEditor({ fee, onClose }: { fee: FeeCategory | null; onClose: () => v
         </fieldset>
 
         <div className="flex items-center justify-between">
-          <h3 className="font-display text-base font-bold">Tranches</h3>
-          <span className="text-sm font-bold">Total : {formatMoney(insts.length ? total : Number(flatAmount) || 0, currency)}</span>
+          <h3 className="text-base font-semibold">Tranches</h3>
+          <span className="text-sm font-semibold">Total : {formatMoney(insts.length ? total : Number(flatAmount) || 0, currency)}</span>
         </div>
         {insts.length === 0 && (
           <Field label={`Montant unique (${currency})`} type="number" min={0} step="0.01" value={flatAmount} onChange={(e) => setFlatAmount(e.target.value)} />

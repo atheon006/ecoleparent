@@ -38,7 +38,7 @@ export function PinPad({ title, hint, error, onComplete }: { title: string; hint
   return (
     <div className="flex flex-col items-center gap-6">
       <div className="flex flex-col items-center gap-1 text-center">
-        <h1 className="font-display text-2xl font-extrabold">{title}</h1>
+        <h1 className="text-2xl font-semibold">{title}</h1>
         {hint && <p className="text-sm text-ink-3">{hint}</p>}
       </div>
       <div className="flex gap-4" aria-label={`${pin.length} chiffre${pin.length > 1 ? 's' : ''} sur 4`}>
@@ -57,7 +57,7 @@ export function PinPad({ title, hint, error, onComplete }: { title: string; hint
               type="button"
               onClick={() => press(k)}
               aria-label={k === '⌫' ? 'Effacer' : k}
-              className="flex size-[72px] items-center justify-center rounded-full bg-surface font-display text-2xl font-bold shadow-sm active:bg-muted"
+              className="flex size-[72px] items-center justify-center rounded-full bg-surface text-2xl font-bold shadow-sm active:bg-muted"
             >
               {k === '⌫' ? <Icon name="caret-left" size={24} /> : k}
             </button>

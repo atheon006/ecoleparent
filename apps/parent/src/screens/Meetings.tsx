@@ -45,7 +45,7 @@ export function MeetingsScreen({ nav }: { nav: Nav }) {
             <div key={e.id} className="pe-card mx-4 flex items-start gap-3.5 p-4">
               <DateBox date={e.date} tone="ok" />
               <div className="min-w-0 flex-1">
-                <div className="font-extrabold">{e.title}</div>
+                <div className="font-semibold">{e.title}</div>
                 <div className="text-[13px] text-ink-3">{[e.time, e.place].filter(Boolean).join(' · ') || formatLongCap(e.date)}</div>
                 {e.description && <p className="mt-1 text-[13px] text-ink-2">{e.description}</p>}
                 {e.rsvp && (
@@ -66,7 +66,7 @@ export function MeetingsScreen({ nav }: { nav: Nav }) {
             {mine.map((s) => (
               <Row
                 key={s.id}
-                left={<span className="tone-g flex size-[42px] shrink-0 items-center justify-center rounded-full font-display text-sm font-extrabold">{nameInitials(s.teacherName)}</span>}
+                left={<span className="tone-g flex size-[42px] shrink-0 items-center justify-center rounded-full text-sm font-semibold">{nameInitials(s.teacherName)}</span>}
                 title={`${s.teacherName} · ${formatShort(s.date)} à ${s.start}`}
                 sub={[s.place, s.studentName ? `pour ${s.studentName}` : null].filter(Boolean).join(' · ')}
                 end={
@@ -80,7 +80,7 @@ export function MeetingsScreen({ nav }: { nav: Nav }) {
                             .then(() => toast('Rendez-vous annulé.'))
                             .catch((err) => toast(errorMessage(err), 'error'))
                         }
-                        className="text-[12px] font-bold text-ink-3"
+                        className="text-[12px] font-semibold text-ink-3"
                       >
                         Annuler
                       </button>
@@ -105,9 +105,9 @@ export function MeetingsScreen({ nav }: { nav: Nav }) {
             return (
               <div key={t} className="pe-card mx-4 p-4">
                 <div className="flex items-center gap-3">
-                  <span className="tone-g flex size-11 shrink-0 items-center justify-center rounded-full font-display text-sm font-extrabold">{nameInitials(slots[0].teacherName)}</span>
+                  <span className="tone-g flex size-11 shrink-0 items-center justify-center rounded-full text-sm font-semibold">{nameInitials(slots[0].teacherName)}</span>
                   <div>
-                    <div className="font-extrabold">{slots[0].teacherName}</div>
+                    <div className="font-semibold">{slots[0].teacherName}</div>
                     <div className="text-[12.5px] text-ink-3">{slots[0].place || 'Créneaux proposés'}</div>
                   </div>
                 </div>

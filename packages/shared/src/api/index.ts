@@ -6,3 +6,4 @@ export * from './records';
 export * from './notify';
 export * from './academics';
 export * from './engagement';
+export * from './ai';

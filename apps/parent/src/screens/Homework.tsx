@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Btn, Chips, EmptyState, Note, Pill, Section, Tile } from '../components/kit';
 import type { Child } from '../data';
 import { subjectStyle } from '../helpers';
+import doneImg from '../assets/illustrations/tout-est-fait.svg';
 
 type Filter = 'todo' | 'seen' | 'all';
 
@@ -42,7 +43,7 @@ export function HomeworkView({ child: c }: { child: Child }) {
         ]}
       />
       {list.length === 0 ? (
-        <EmptyState icon="notebook" tone="v" title={filter === 'todo' ? 'Aucun devoir à faire' : 'Aucun devoir'}>
+        <EmptyState icon="notebook" image={filter === 'todo' ? doneImg : undefined} title={filter === 'todo' ? 'Aucun devoir à faire' : 'Aucun devoir'}>
           {filter === 'todo' ? "Tout est vu pour l'instant. Vous serez prévenu dès qu'un enseignant en ajoute." : 'Les devoirs des 30 derniers jours apparaissent ici.'}
         </EmptyState>
       ) : (
@@ -94,10 +95,10 @@ function HomeworkCard({ h, child, past }: { h: Homework; child: Child; past: boo
       <div className="flex items-start gap-3">
         <Tile icon={st.icon} tone={st.tone} />
         <div className="min-w-0 flex-1">
-          <div className="text-xs font-bold text-ink-3">
+          <div className="text-xs font-semibold text-ink-3">
             {h.subject} · {h.teacherName}
           </div>
-          <h3 className="text-[15px] leading-snug font-extrabold">{h.title}</h3>
+          <h3 className="text-[15px] leading-snug font-semibold">{h.title}</h3>
           {h.description && <p className="mt-1 text-[13px] leading-relaxed whitespace-pre-line text-ink-2">{h.description}</p>}
         </div>
       </div>
@@ -108,7 +109,7 @@ function HomeworkCard({ h, child, past }: { h: Homework; child: Child; past: boo
             Vu par vous
           </Pill>
           {!past && (
-            <button type="button" onClick={() => void toggle()} disabled={busy} className="text-[12.5px] font-bold text-ink-3">
+            <button type="button" onClick={() => void toggle()} disabled={busy} className="text-[12.5px] font-semibold text-ink-3">
               Annuler
             </button>
           )}

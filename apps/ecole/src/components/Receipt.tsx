@@ -24,13 +24,13 @@ export function ReceiptModal({ payment, school, onClose }: { payment: Payment | 
     >
       <div className="print-area mx-auto flex max-w-sm flex-col gap-3 rounded-2xl border border-line p-5 text-[14px]">
         <div className="flex flex-col items-center gap-0.5 border-b border-dashed border-line pb-3 text-center">
-          <span className="font-display text-lg font-bold">{school?.name}</span>
+          <span className="text-base font-semibold">{school?.name}</span>
           {school?.address && <span className="text-xs text-ink-3">{school.address}</span>}
           {school?.phone && <span className="text-xs text-ink-3">{school.phone}</span>}
         </div>
         <div className="text-center">
-          <div className="text-xs font-bold tracking-wider text-ink-3 uppercase">Reçu</div>
-          <div className="font-mono text-base font-bold">{payment.reference}</div>
+          <div className="text-xs font-semibold tracking-wider text-ink-3 uppercase">Reçu</div>
+          <div className="font-mono text-base font-semibold">{payment.reference}</div>
         </div>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
           <dt className="text-ink-3">Élève</dt>
@@ -47,8 +47,8 @@ export function ReceiptModal({ payment, school, onClose }: { payment: Payment | 
           <dd className="text-right">{payment.recordedByName}</dd>
         </dl>
         <div className="flex items-baseline justify-between border-t border-dashed border-line pt-3">
-          <span className="font-bold">Montant</span>
-          <span className="font-display text-2xl font-extrabold">{formatMoney(payment.amount, cur)}</span>
+          <span className="font-semibold">Montant</span>
+          <span className="font-display text-2xl font-semibold">{formatMoney(payment.amount, cur)}</span>
         </div>
         {payment.notes && <p className="text-xs text-ink-3">{payment.notes}</p>}
         <p className="text-center text-xs text-ink-3">Ce paiement apparaît aussi dans l'application ParentEcole du parent.</p>
