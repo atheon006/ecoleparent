@@ -38,6 +38,19 @@ describe('import avec Gemini', () => {
     expect(sent.contents[0].parts[1].inline_data.mime_type).toBe('application/pdf');
     expect(sent.contents[0].parts[0].text).toContain('6e Primaire B');
     expect(sent.contents[0].parts[0].text).toContain('Ne devine jamais le sexe');
+    expect(sent.generationConfig.thinkingConfig).toEqual({ thinkingLevel: 'minimal' });
+  });
+
+  it('renvoie la demande sans réglage de réflexion si le modèle le refuse', async () => {
+    const bodies: { generationConfig: Record<string, unknown> }[] = [];
+    const fetcher = (async (_url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(String(init.body)));
+      if (bodies.length === 1) return new Response(JSON.stringify({ error: { message: 'Request contains an invalid argument.', status: 'INVALID_ARGUMENT' } }), { status: 400 });
+      return new Response(JSON.stringify(reply({ title: 'T', questions: [] })), { status: 200 });
+    }) as unknown as typeof fetch;
+    await expect(callGemini({ GEMINI_API_KEY: 'k' }, { kind: 'quiz', text: 'cours' }, fetcher, [])).resolves.toEqual({ title: 'T', questions: [] });
+    expect(bodies[0].generationConfig.thinkingConfig).toEqual({ thinkingLevel: 'low' });
+    expect(bodies[1].generationConfig.thinkingConfig).toBeUndefined();
   });
 
   it('utilise le modèle choisi et le texte des fichiers Word ou Excel', async () => {
@@ -50,8 +63,43 @@ describe('import avec Gemini', () => {
   });
 
   it('traduit les erreurs de Gemini en messages clairs', async () => {
-    await expect(callGemini({ GEMINI_API_KEY: 'k' }, { kind: 'students', text: 'x' }, fakeFetch(429, { error: { status: 'RESOURCE_EXHAUSTED' } }).fetcher)).rejects.toMatchObject({ status: 429 });
-    await expect(callGemini({ GEMINI_API_KEY: 'k' }, { kind: 'students', text: 'x' }, fakeFetch(400, { error: { message: 'API key not valid' } }).fetcher)).rejects.toThrow(/clé API/);
-    await expect(callGemini({ GEMINI_API_KEY: 'k' }, { kind: 'students', text: 'x' }, fakeFetch(200, { candidates: [{ content: { parts: [{ text: '{oups' }] }, finishReason: 'MAX_TOKENS' }] }).fetcher)).rejects.toThrow(/découpez/);
+    await expect(callGemini({ GEMINI_API_KEY: 'k' }, { kind: 'students', text: 'x' }, fakeFetch(429, { error: { status: 'RESOURCE_EXHAUSTED' } }).fetcher, [])).rejects.toMatchObject({ status: 429 });
+    await expect(callGemini({ GEMINI_API_KEY: 'k' }, { kind: 'students', text: 'x' }, fakeFetch(400, { error: { message: 'API key not valid' } }).fetcher, [])).rejects.toThrow(/clé API/);
+    await expect(callGemini({ GEMINI_API_KEY: 'k' }, { kind: 'students', text: 'x' }, fakeFetch(200, { candidates: [{ content: { parts: [{ text: '{oups' }] }, finishReason: 'MAX_TOKENS' }] }).fetcher, [])).rejects.toThrow(/découpez/);
+  });
+
+  it('réessaie quand Gemini est saturé, puis passe au modèle léger', async () => {
+    const urls: string[] = [];
+    let n = 0;
+    const fetcher = (async (url: string) => {
+      urls.push(url);
+      n++;
+      if (n < 3) return new Response(JSON.stringify({ error: { status: 'UNAVAILABLE', message: 'high demand' } }), { status: 503 });
+      return new Response(JSON.stringify(reply({ title: 'T', questions: [] })), { status: 200 });
+    }) as unknown as typeof fetch;
+    await expect(callGemini({ GEMINI_API_KEY: 'k' }, { kind: 'quiz', text: 'cours' }, fetcher, [0])).resolves.toEqual({ title: 'T', questions: [] });
+    expect(urls.slice(0, 2).every((u) => u.includes('gemini-flash-latest'))).toBe(true);
+    expect(urls[2]).toContain('gemini-flash-lite-latest');
+  });
+
+  it('passe directement au modèle léger si Gemini met trop de temps', async () => {
+    const urls: string[] = [];
+    const fetcher = (async (url: string) => {
+      urls.push(url);
+      if (urls.length === 1) throw Object.assign(new Error('timeout'), { name: 'TimeoutError' });
+      return new Response(JSON.stringify(reply({ title: 'T', questions: [] })), { status: 200 });
+    }) as unknown as typeof fetch;
+    await expect(callGemini({ GEMINI_API_KEY: 'k' }, { kind: 'quiz', text: 'cours' }, fetcher, [0])).resolves.toEqual({ title: 'T', questions: [] });
+    expect(urls).toHaveLength(2);
+    expect(urls[1]).toContain('gemini-flash-lite-latest');
+  });
+
+  it("n'envoie que M ou F : le sexe inconnu (X) devient vide", async () => {
+    const students = [{ lastName: 'A', firstName: 'B', gender: 'X', birthDate: '', className: '', parentName: '', parentPhone: '', uncertain: ['gender'] }];
+    const { fetcher, calls } = fakeFetch(200, reply({ students, remark: '' }));
+    const out = (await callGemini({ GEMINI_API_KEY: 'k' }, { kind: 'students', text: 'x' }, fetcher, [])) as { students: { gender: string }[] };
+    expect(out.students[0].gender).toBe('');
+    const sent = JSON.parse(String(calls[0].init.body));
+    expect(sent.generationConfig.responseSchema.properties.students.items.properties.gender.enum).toEqual(['M', 'F', 'X']);
   });
 });

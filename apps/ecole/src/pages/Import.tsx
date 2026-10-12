@@ -19,7 +19,7 @@ import { getFirebase } from '@pe/shared/firebase';
 import { useLiveQuery } from '@pe/shared/hooks';
 import { Button, Checkbox, ErrorNote, Field, IconButton, SelectField, Spinner, cx, useToast } from '@pe/shared/ui';
 import { Camera, FileText, Printer, ShieldCheck, Trash2, Upload } from 'lucide-react';
-import { useMemo, useState, type DragEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import { useAccess, useRole } from '../access';
 import illustration from '../assets/import.svg';
 import { PageHeader } from '../components/common';
@@ -84,10 +84,22 @@ export function ImportPage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ kind: ImportKind; data: AiResults[ImportKind]; doc: PreparedDocument } | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const abort = useRef<AbortController | null>(null);
+
+  // Compteur pendant l'analyse : on voit que le travail avance.
+  useEffect(() => {
+    if (!busy) return;
+    setElapsed(0);
+    const started = Date.now();
+    const t = setInterval(() => setElapsed(Math.round((Date.now() - started) / 1000)), 1000);
+    return () => clearInterval(t);
+  }, [busy]);
 
   async function analyze(file: File) {
     setError(null);
     setBusy(true);
+    abort.current = new AbortController();
     try {
       const prepared = await prepareDocument(file);
       setDoc(prepared);
@@ -96,7 +108,7 @@ export function ImportPage() {
         kind === 'quiz'
           ? { level: cls?.name, subject: quizSubject || undefined, count: Number(quizCount) || 10 }
           : { classes: classes.map((c) => c.name) };
-      const { result: data } = await analyzeDocument(db, schoolId, kind, { file: prepared.file, text: prepared.text }, hints);
+      const { result: data } = await analyzeDocument(db, schoolId, kind, { file: prepared.file, text: prepared.text }, hints, abort.current.signal);
       setResult({ kind, data, doc: prepared });
     } catch (err) {
       setError((err as Error).message);
@@ -200,7 +212,12 @@ export function ImportPage() {
               <Spinner className="size-5 text-brand" />
               <div>
                 <div className="text-[17px] font-semibold">Gemini lit le document…</div>
-                <div className="text-sm text-ink-3">{doc ? `${doc.name} · ${doc.label}` : 'Préparation du fichier'} · cela prend en général 10 à 30 secondes.</div>
+                <div className="text-sm text-ink-3">
+                  {doc ? `${doc.name} · ${doc.label}` : 'Préparation du fichier'} · {elapsed} s · en général 15 à 40 secondes
+                </div>
+                <button type="button" onClick={() => abort.current?.abort()} className="mt-2 text-sm font-semibold text-brand">
+                  Annuler
+                </button>
               </div>
             </div>
           ) : (

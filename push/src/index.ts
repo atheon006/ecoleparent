@@ -7,7 +7,7 @@
 // message et l'envoie par Firebase Cloud Messaging aux parents concernés.
 // Il passe chaque minute (cron) et tout de suite quand le site l'appelle sur POST /kick.
 
-import { ImportError, callGemini, checkInput, type ImportInput } from './ai';
+import { IMPORT_KINDS, ImportError, callGemini, checkInput, geminiSelfTest, geminiStatus, type ImportInput } from './ai';
 
 export interface Env {
   PROJECT_ID: string;
@@ -93,6 +93,11 @@ export default {
       return new Response(null, { status: 202, headers: cors });
     }
     if (url.pathname === '/ai/import' && req.method === 'POST') return handleImport(req, env, cors);
+    if (url.pathname === '/ai/status' && req.method === 'GET') {
+      const test = url.searchParams.get('test');
+      const only = IMPORT_KINDS.find((k) => k === test);
+      return json(await (test ? geminiSelfTest(env, only) : geminiStatus(env)).catch(() => ({ error: 'indisponible' })), 200, cors);
+    }
     if (url.pathname === '/') return new Response('ParentEcole · notifications : en service\n');
     return new Response('Introuvable\n', { status: 404 });
   },
@@ -416,7 +421,16 @@ export async function handleImport(req: Request, env: Env, cors: HeadersInit): P
     const limit = Number(env.AI_DAILY_LIMIT ?? 40);
     if (used >= limit) return json({ error: `Limite de ${limit} analyses par jour atteinte pour l'école. Réessayez demain.` }, 429, cors);
 
-    const result = await callGemini(env, body);
+    const started = Date.now();
+    const size = body.file?.data.length ?? body.text?.length ?? 0;
+    let result: unknown;
+    try {
+      result = await callGemini(env, body);
+    } catch (e) {
+      console.log(JSON.stringify({ ai: body.kind, school: body.schoolId, size, ms: Date.now() - started, ok: false, error: (e as Error).message.slice(0, 120) }));
+      throw e;
+    }
+    console.log(JSON.stringify({ ai: body.kind, school: body.schoolId, size, ms: Date.now() - started, ok: true }));
     await api
       .commit([
         {

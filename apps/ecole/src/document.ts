@@ -20,9 +20,9 @@ function toBase64(buf: ArrayBuffer): string {
   return btoa(bin);
 }
 
-/** Réduit une grande photo (2000 px au plus, JPEG) : plus rapide à envoyer sur un réseau lent. */
+/** Réduit une grande photo (1600 px au plus, JPEG) : plus rapide à envoyer sur un réseau lent. */
 async function shrinkImage(file: File): Promise<{ mimeType: string; data: string }> {
-  if (file.size < 1_500_000 || /heic|heif/i.test(file.type)) return { mimeType: file.type, data: toBase64(await file.arrayBuffer()) };
+  if (file.size < 700_000 || /heic|heif/i.test(file.type)) return { mimeType: file.type, data: toBase64(await file.arrayBuffer()) };
   const url = URL.createObjectURL(file);
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -31,12 +31,12 @@ async function shrinkImage(file: File): Promise<{ mimeType: string; data: string
       i.onerror = () => reject(new Error("Cette photo n'a pas pu être lue."));
       i.src = url;
     });
-    const scale = Math.min(1, 2000 / Math.max(img.width, img.height));
+    const scale = Math.min(1, 1600 / Math.max(img.width, img.height));
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(img.width * scale);
     canvas.height = Math.round(img.height * scale);
     canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
-    return { mimeType: 'image/jpeg', data: canvas.toDataURL('image/jpeg', 0.85).split(',')[1] };
+    return { mimeType: 'image/jpeg', data: canvas.toDataURL('image/jpeg', 0.82).split(',')[1] };
   } finally {
     URL.revokeObjectURL(url);
   }
